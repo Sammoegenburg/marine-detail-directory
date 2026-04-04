@@ -1,6 +1,8 @@
 // src/lib/email-templates.ts
 // Branded HTML email templates — no external dependencies
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://marine-detail-directory.vercel.app";
+
 export type NewLeadEmailParams = {
   companyName: string;
   cityName: string;
