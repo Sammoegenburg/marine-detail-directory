@@ -20,9 +20,10 @@ const schema = z.object({
   city: z.string().min(2).max(80),
   state: z.string().length(2),
   zipCode: z.string().min(5).max(10),
-  phone: z.string().min(7).max(20),
+  phone: z.string().min(7).max(30),
   email: z.string().email(),
-  website: z.string().url().optional().or(z.literal("")),
+  // Accept any non-empty string; normalize to https:// in handler
+  website: z.string().max(500).optional().or(z.literal("")),
   vehicleTypes: z.array(z.string()),
   carServices: z.array(z.string()),
   boatServices: z.array(z.string()),
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
+    console.error("[onboarding] Zod validation failed:", JSON.stringify(parsed.error.flatten()));
     return NextResponse.json(
       { error: "Invalid input", details: parsed.error.flatten() },
       { status: 400 }
@@ -77,6 +79,11 @@ export async function POST(req: NextRequest) {
   }
 
   const data = parsed.data;
+
+  // Normalize website: prepend https:// if user omitted the protocol
+  if (data.website && data.website !== "" && !/^https?:\/\//i.test(data.website)) {
+    data.website = `https://${data.website}`;
+  }
 
   // ── Resolve or create City ──────────────────────────────────────────
   const stateRecord = await prisma.state.findUnique({
