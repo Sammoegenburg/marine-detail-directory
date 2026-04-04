@@ -1,1887 +1,738 @@
 "use client";
 
-// src/components/dashboard/CompanyDashboardApp.tsx
-// Premium company dashboard — tactical glass UI
-// Single-component SPA: onboarding, dashboard, leads, profile, billing
-
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import React, { useState, useMemo } from 'react';
 import {
-  Anchor, LayoutDashboard, Inbox, Settings, CreditCard,
-  ChevronRight, ChevronLeft, CheckCircle2, X, Phone, Mail,
-  Globe, MapPin, Loader2, Building2, Wrench, Bell, ClipboardList,
-  Star, DollarSign, TrendingUp, Zap, Shield, Clock, ArrowRight,
-  Car, User, Receipt, AlertCircle, Check, Sparkles, Copy,
-  RefreshCw, Eye, EyeOff, SlidersHorizontal,
-} from "lucide-react";
-import { PaymentMethodForm } from "@/components/dashboard/PaymentMethodForm";
-import { BOAT_SIZE_LABELS, SERVICE_LABELS } from "@/types";
+  LayoutDashboard,
+  Inbox,
+  UserCircle,
+  CreditCard,
+  MapPin,
+  ChevronRight,
+  Star,
+  Zap,
+  CheckCircle2,
+  Ship,
+  Car,
+  TrendingUp,
+  Clock,
+  MoreHorizontal,
+  Plus,
+  Globe,
+  Phone,
+  Mail,
+  Building2,
+  AlertCircle,
+  ShieldCheck,
+  Lock,
+  User,
+  Navigation,
+  Layers,
+  Maximize2,
+  Calendar,
+  Hash,
+  ArrowUpRight,
+  Info,
+  X,
+  Search,
+  Filter,
+  Check,
+  Smartphone,
+  Receipt,
+  CreditCard as CardIcon,
+  Download,
+  Printer,
+  ChevronDown,
+  LockKeyhole,
+  ArrowLeft,
+  Sparkles,
+  Loader2,
+  Menu
+} from 'lucide-react';
 
-// ─────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────
-
-export type SerializedCompany = {
-  id: string;
-  name: string;
-  slug: string;
-  status: string;
-  email: string | null;
-  phone: string | null;
-  website: string | null;
-  address: string | null;
-  description: string | null;
-  stripeCustomerId: string | null;
-  leadCreditBalance: number;
-  averageRating: number | null;
-  reviewCount: number;
-  totalSpend: number;
-  cityName: string;
-  stateAbbr: string;
-  services: Array<{ category: string; serviceName: string }>;
-  billingHistory: Array<{
-    id: string;
-    serviceName: string;
-    amountCharged: number;
-    createdAt: string;
-    isRefunded: boolean;
-    stripePaymentIntentId: string | null;
-  }>;
-};
-
-export type SerializedAvailableLead = {
-  id: string;
-  vehicleType: string;
-  customerName: string;
-  serviceName: string;
-  serviceCategory: string;
-  cityName: string;
-  stateAbbr: string;
-  leadPrice: number;
-  boatSize: string | null;
-  boatType: string | null;
-  boatMake: string | null;
-  boatYear: number | null;
-  notes: string | null;
-  createdAt: string;
-};
-
-export type SerializedPurchasedLead = {
-  id: string;
-  purchaseId: string;
-  vehicleType: string;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  serviceName: string;
-  cityName: string;
-  stateAbbr: string;
-  leadPrice: number;
-  amountCharged: number;
-  boatSize: string | null;
-  boatType: string | null;
-  boatMake: string | null;
-  boatYear: number | null;
-  notes: string | null;
-  createdAt: string;
-};
-
-export type PaymentMethodData = {
-  brand: string;
-  last4: string;
-  expMonth: number;
-  expYear: number;
-};
-
-type View = "dashboard" | "leads" | "profile" | "billing";
-
-type AppProps = {
-  company: SerializedCompany | null;
-  availableLeads: SerializedAvailableLead[];
-  purchasedLeads: SerializedPurchasedLead[];
-  paymentMethod: PaymentMethodData | null;
-};
-
-// ─────────────────────────────────────────────
-// CONSTANTS
-// ─────────────────────────────────────────────
-
-const US_STATES = [
-  { name: "Alabama", abbr: "AL" }, { name: "Alaska", abbr: "AK" },
-  { name: "Arizona", abbr: "AZ" }, { name: "Arkansas", abbr: "AR" },
-  { name: "California", abbr: "CA" }, { name: "Colorado", abbr: "CO" },
-  { name: "Connecticut", abbr: "CT" }, { name: "Delaware", abbr: "DE" },
-  { name: "Florida", abbr: "FL" }, { name: "Georgia", abbr: "GA" },
-  { name: "Hawaii", abbr: "HI" }, { name: "Idaho", abbr: "ID" },
-  { name: "Illinois", abbr: "IL" }, { name: "Indiana", abbr: "IN" },
-  { name: "Iowa", abbr: "IA" }, { name: "Kansas", abbr: "KS" },
-  { name: "Kentucky", abbr: "KY" }, { name: "Louisiana", abbr: "LA" },
-  { name: "Maine", abbr: "ME" }, { name: "Maryland", abbr: "MD" },
-  { name: "Massachusetts", abbr: "MA" }, { name: "Michigan", abbr: "MI" },
-  { name: "Minnesota", abbr: "MN" }, { name: "Mississippi", abbr: "MS" },
-  { name: "Missouri", abbr: "MO" }, { name: "Montana", abbr: "MT" },
-  { name: "Nebraska", abbr: "NE" }, { name: "Nevada", abbr: "NV" },
-  { name: "New Hampshire", abbr: "NH" }, { name: "New Jersey", abbr: "NJ" },
-  { name: "New Mexico", abbr: "NM" }, { name: "New York", abbr: "NY" },
-  { name: "North Carolina", abbr: "NC" }, { name: "North Dakota", abbr: "ND" },
-  { name: "Ohio", abbr: "OH" }, { name: "Oklahoma", abbr: "OK" },
-  { name: "Oregon", abbr: "OR" }, { name: "Pennsylvania", abbr: "PA" },
-  { name: "Rhode Island", abbr: "RI" }, { name: "South Carolina", abbr: "SC" },
-  { name: "South Dakota", abbr: "SD" }, { name: "Tennessee", abbr: "TN" },
-  { name: "Texas", abbr: "TX" }, { name: "Utah", abbr: "UT" },
-  { name: "Vermont", abbr: "VT" }, { name: "Virginia", abbr: "VA" },
-  { name: "Washington", abbr: "WA" }, { name: "West Virginia", abbr: "WV" },
-  { name: "Wisconsin", abbr: "WI" }, { name: "Wyoming", abbr: "WY" },
-];
-
-const CAR_SERVICES = [
-  { label: "Full Detail", value: "CAR_FULL_DETAIL" },
-  { label: "Interior Detail", value: "CAR_INTERIOR" },
-  { label: "Exterior Wash", value: "CAR_EXTERIOR" },
-  { label: "Paint Correction", value: "PAINT_CORRECTION" },
-  { label: "Ceramic Coating", value: "CERAMIC_COATING" },
-  { label: "Window Tint", value: "WINDOW_TINT" },
-];
-
-const BOAT_SERVICES = [
-  { label: "Full Detail", value: "FULL_DETAIL" },
-  { label: "Hull Cleaning", value: "HULL_CLEANING" },
-  { label: "Wax & Polish", value: "WAXING_POLISHING" },
-  { label: "Teak Restoration", value: "TEAK_RESTORATION" },
-  { label: "Bottom Paint", value: "BOTTOM_PAINT" },
-  { label: "Interior Detail", value: "INTERIOR_DETAIL" },
-  { label: "Canvas Cleaning", value: "CANVAS_CLEANING" },
-  { label: "Brightwork", value: "BRIGHTWORK" },
-];
-
-const NAV_ITEMS: { id: View; label: string; icon: React.ReactNode }[] = [
-  { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-  { id: "leads", label: "Lead Inbox", icon: <Inbox className="h-4 w-4" /> },
-  { id: "profile", label: "Profile", icon: <User className="h-4 w-4" /> },
-  { id: "billing", label: "Billing", icon: <CreditCard className="h-4 w-4" /> },
-];
-
-// ─────────────────────────────────────────────
-// TYPOGRAPHY + CSS INJECTION
-// ─────────────────────────────────────────────
-
+// --- Global Stylings ---
 function TypographyStyle() {
   return (
-    <style>{`
+    <style dangerouslySetInnerHTML={{ __html: `
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+      :root {
+        --font-main: 'Inter', sans-serif;
+      }
+
+      body {
+        font-family: var(--font-main);
+        -webkit-font-smoothing: antialiased;
+        background-color: #F8F9FA;
+        color: #1d1d1f;
+        font-size: 13px;
+        overscroll-behavior-y: contain;
+      }
+
       .tactical-glass {
-        background: rgba(255,255,255,0.05);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255,255,255,0.10);
+        background: rgba(10, 10, 12, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
       }
-      .tactical-glass:hover {
-        border-color: rgba(255,255,255,0.18);
+
+      @media (min-width: 768px) {
+        .tactical-glass:hover {
+          border: 1px solid rgba(255, 56, 92, 0.4);
+          box-shadow: 0 15px 35px -10px rgba(255, 56, 92, 0.2);
+        }
       }
-      .tactical-glass-solid {
-        background: rgba(13,13,26,0.95);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255,255,255,0.10);
+
+      input[type='range'] {
+        -webkit-appearance: none;
+        background: transparent;
       }
-      .tracking-tight-custom { letter-spacing: -0.025em; }
-      .dark-scroll::-webkit-scrollbar { width: 5px; }
-      .dark-scroll::-webkit-scrollbar-track { background: transparent; }
-      .dark-scroll::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,0.12);
+      input[type='range']::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 4px;
+        background: #E2E8F0;
         border-radius: 4px;
       }
-      .dark-scroll::-webkit-scrollbar-thumb:hover {
-        background: rgba(255,255,255,0.2);
-      }
-      @keyframes cda-fade-up {
-        from { opacity: 0; transform: translateY(12px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      @keyframes cda-slide-right {
-        from { opacity: 0; transform: translateX(32px); }
-        to { opacity: 1; transform: translateX(0); }
-      }
-      @keyframes cda-slide-left {
-        from { opacity: 0; transform: translateX(-32px); }
-        to { opacity: 1; transform: translateX(0); }
-      }
-      @keyframes cda-fade-in {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      .cda-fade-up   { animation: cda-fade-up   0.35s cubic-bezier(.22,1,.36,1) both; }
-      .cda-slide-right { animation: cda-slide-right 0.35s cubic-bezier(.22,1,.36,1) both; }
-      .cda-slide-left  { animation: cda-slide-left  0.35s cubic-bezier(.22,1,.36,1) both; }
-      .cda-fade-in   { animation: cda-fade-in   0.25s ease both; }
-
-      input[type="range"].accent-slider {
-        -webkit-appearance: none;
-        appearance: none;
-        height: 4px;
-        background: rgba(255,255,255,0.15);
-        border-radius: 2px;
-        outline: none;
-      }
-      input[type="range"].accent-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 18px; height: 18px;
+      input[type='range']::-webkit-slider-thumb {
+        height: 16px;
+        width: 16px;
         border-radius: 50%;
         background: #ff385c;
         cursor: pointer;
-        box-shadow: 0 0 0 3px rgba(255,56,92,0.25);
+        -webkit-appearance: none;
+        margin-top: -7px;
+        border: 2px solid white;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       }
-      input[type="range"].accent-slider::-moz-range-thumb {
-        width: 18px; height: 18px;
-        border-radius: 50%;
-        background: #ff385c;
-        cursor: pointer;
-        border: none;
+
+      .tracking-tight-custom { letter-spacing: -0.02em; }
+      .tracking-tighter-custom { letter-spacing: -0.04em; }
+
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
       }
-      .glass-input {
-        background: rgba(255,255,255,0.07);
-        border: 1px solid rgba(255,255,255,0.12);
-        color: white;
-        border-radius: 12px;
-        padding: 10px 14px;
-        font-size: 14px;
-        font-weight: 500;
-        outline: none;
-        width: 100%;
-        transition: border-color 0.15s;
+      .animate-spin-custom {
+        animation: spin 1s linear infinite;
       }
-      .glass-input::placeholder { color: rgba(255,255,255,0.3); }
-      .glass-input:focus { border-color: rgba(255,56,92,0.6); box-shadow: 0 0 0 3px rgba(255,56,92,0.12); }
-      .glass-input option { background: #1a1a2e; color: white; }
-
-      .coral-btn {
-        background: #ff385c;
-        color: white;
-        font-weight: 700;
-        border-radius: 12px;
-        padding: 10px 22px;
-        font-size: 14px;
-        cursor: pointer;
-        border: none;
-        transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
-        display: inline-flex; align-items: center; gap: 6px;
-      }
-      .coral-btn:hover { background: #e0334f; box-shadow: 0 4px 20px rgba(255,56,92,0.3); }
-      .coral-btn:active { transform: scale(0.97); }
-      .coral-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-
-      .ghost-btn {
-        background: rgba(255,255,255,0.06);
-        color: rgba(255,255,255,0.7);
-        font-weight: 600;
-        border-radius: 12px;
-        padding: 10px 22px;
-        font-size: 14px;
-        cursor: pointer;
-        border: 1px solid rgba(255,255,255,0.1);
-        transition: background 0.15s, color 0.15s;
-        display: inline-flex; align-items: center; gap: 6px;
-      }
-      .ghost-btn:hover { background: rgba(255,255,255,0.1); color: white; }
-
-      .lead-card-glow {
-        box-shadow: 0 0 0 1px rgba(255,56,92,0); transition: box-shadow 0.2s;
-      }
-      .lead-card-glow:hover {
-        box-shadow: 0 0 0 1px rgba(255,56,92,0.4), 0 8px 32px rgba(0,0,0,0.4);
-      }
-    `}</style>
+    `}} />
   );
 }
 
-// ─────────────────────────────────────────────
-// HELPER COMPONENTS
-// ─────────────────────────────────────────────
+// --- Constants & Data ---
+const MARINE_SERVICES = ['Boat Full Detail', 'Hull Cleaning', 'Wax & Polish', 'Teak Restoration', 'Bottom Paint', 'Brightwork', 'Ceramic Coating', 'Gelcoat Repair'];
+const AUTO_SERVICES = ['Car Full Detail', 'Car Interior', 'Car Exterior Wash', 'Paint Correction', 'Ceramic Coating', 'Window Tint', 'Engine Bay Detail', 'Headlight Restoration'];
 
-function SidebarItem({
-  item, active, onClick,
-}: {
-  item: (typeof NAV_ITEMS)[number];
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-        active
-          ? "bg-[#ff385c]/15 text-[#ff385c] border border-[#ff385c]/25"
-          : "text-white/50 hover:text-white hover:bg-white/6 border border-transparent"
-      }`}
-    >
-      {item.icon}
-      <span>{item.label}</span>
-    </button>
-  );
-}
-
-function MobileNavItem({
-  item, active, onClick,
-}: {
-  item: (typeof NAV_ITEMS)[number];
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-        active ? "text-[#ff385c]" : "text-white/40 hover:text-white/70"
-      }`}
-    >
-      <span className={`transition-transform ${active ? "scale-110" : ""}`}>{item.icon}</span>
-      <span>{item.label}</span>
-    </button>
-  );
-}
-
-function GlassCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`tactical-glass rounded-2xl p-5 ${className}`}>
-      {children}
-    </div>
-  );
-}
-
-function StatCard({ label, value, sub, icon, accent = false }: {
-  label: string;
-  value: string;
-  sub?: string;
-  icon: React.ReactNode;
-  accent?: boolean;
-}) {
-  return (
-    <GlassCard className="cda-fade-up">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-white/40 text-xs font-semibold uppercase tracking-widest">{label}</p>
-        <div className={`p-2 rounded-lg ${accent ? "bg-[#ff385c]/20 text-[#ff385c]" : "bg-white/8 text-white/40"}`}>
-          {icon}
-        </div>
-      </div>
-      <p className={`text-3xl font-bold tracking-tight-custom ${accent ? "text-[#ff385c]" : "text-white"}`}>{value}</p>
-      {sub && <p className="text-white/35 text-xs mt-1">{sub}</p>}
-    </GlassCard>
-  );
-}
-
-function GlassCheckbox({ checked, onChange, label, required }: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  label: React.ReactNode;
-  required?: boolean;
-}) {
-  return (
-    <label className="flex items-start gap-3 cursor-pointer group">
-      <div
-        className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all border ${
-          checked
-            ? "bg-[#ff385c] border-[#ff385c]"
-            : "border-white/20 bg-white/5 group-hover:border-white/40"
-        }`}
-        onClick={() => onChange(!checked)}
-      >
-        {checked && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-      </div>
-      <span className="text-sm text-white/70 leading-relaxed">
-        {label}{required && <span className="text-[#ff385c] ml-0.5">*</span>}
-      </span>
-    </label>
-  );
-}
-
-function VehicleTypeBadge({ type }: { type: string }) {
-  const isBoat = type === "BOAT";
-  return (
-    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
-      isBoat ? "bg-blue-500/15 text-blue-400 border border-blue-500/20" : "bg-violet-500/15 text-violet-400 border border-violet-500/20"
-    }`}>
-      {isBoat ? "⛵" : "🚗"} {isBoat ? "Boat" : "Car"}
-    </span>
-  );
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  const copy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-  return (
-    <button
-      onClick={copy}
-      className="p-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/8 transition-all"
-      title="Copy"
-    >
-      {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-    </button>
-  );
-}
-
-// ─────────────────────────────────────────────
-// LEAD CARD (available + purchased)
-// ─────────────────────────────────────────────
-
-function AvailableLeadCard({
-  lead,
-  onSelect,
-}: {
-  lead: SerializedAvailableLead;
-  onSelect: (lead: SerializedAvailableLead) => void;
-}) {
-  const ago = useTimeAgo(lead.createdAt);
-  return (
-    <div
-      className="tactical-glass lead-card-glow rounded-2xl p-5 cursor-pointer transition-all cda-fade-up"
-      onClick={() => onSelect(lead)}
-    >
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <VehicleTypeBadge type={lead.vehicleType} />
-            <span className="text-white/30 text-xs">{ago}</span>
-          </div>
-          <h3 className="text-white font-semibold text-sm">{lead.customerName}</h3>
-          <p className="text-white/50 text-xs mt-0.5">{lead.serviceName}</p>
-        </div>
-        <div className="text-right shrink-0">
-          <p className="text-[#ff385c] font-bold text-lg">${lead.leadPrice.toFixed(0)}</p>
-          <p className="text-white/30 text-xs">to unlock</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-3 text-white/40 text-xs">
-        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{lead.cityName}, {lead.stateAbbr}</span>
-        {lead.boatSize && (
-          <span className="flex items-center gap-1">
-            <SlidersHorizontal className="h-3 w-3" />
-            {BOAT_SIZE_LABELS[lead.boatSize as keyof typeof BOAT_SIZE_LABELS] ?? lead.boatSize}
-          </span>
-        )}
-        {lead.boatType && <span>{lead.boatType}</span>}
-      </div>
-      <div className="mt-3 pt-3 border-t border-white/8 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-emerald-400 text-xs font-medium">New lead</span>
-        </div>
-        <span className="text-white/40 text-xs flex items-center gap-1">
-          View details <ChevronRight className="h-3 w-3" />
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function PurchasedLeadCard({ lead }: { lead: SerializedPurchasedLead }) {
-  const [showContact, setShowContact] = useState(false);
-  const ago = useTimeAgo(lead.createdAt);
-  return (
-    <div className="tactical-glass rounded-2xl p-5 cda-fade-up">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <VehicleTypeBadge type={lead.vehicleType} />
-            <span className="text-white/30 text-xs">{ago}</span>
-          </div>
-          <h3 className="text-white font-semibold text-sm">{lead.customerName}</h3>
-          <p className="text-white/50 text-xs mt-0.5">{lead.serviceName}</p>
-        </div>
-        <div className="text-right shrink-0">
-          <div className="inline-flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-full">
-            <Check className="h-3 w-3" strokeWidth={3} /> Purchased
-          </div>
-          <p className="text-white/30 text-xs mt-1">${lead.amountCharged.toFixed(2)}</p>
-        </div>
-      </div>
-
-      {/* Contact info */}
-      <button
-        onClick={() => setShowContact((v) => !v)}
-        className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-white/5 border border-white/8 hover:bg-white/8 transition-all text-sm text-white/60 hover:text-white mb-3"
-      >
-        <span className="flex items-center gap-2">
-          <User className="h-3.5 w-3.5" /> Contact Info
-        </span>
-        {showContact ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-      </button>
-
-      {showContact && (
-        <div className="space-y-2 mb-3 cda-fade-in">
-          <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/4 border border-white/6">
-            <div className="flex items-center gap-2 text-white/70 text-sm">
-              <Phone className="h-3.5 w-3.5 text-[#ff385c]" />
-              <span>{lead.customerPhone}</span>
-            </div>
-            <CopyButton text={lead.customerPhone} />
-          </div>
-          <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/4 border border-white/6">
-            <div className="flex items-center gap-2 text-white/70 text-sm">
-              <Mail className="h-3.5 w-3.5 text-[#ff385c]" />
-              <span>{lead.customerEmail}</span>
-            </div>
-            <CopyButton text={lead.customerEmail} />
-          </div>
-        </div>
-      )}
-
-      <div className="flex items-center gap-3 text-white/40 text-xs">
-        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{lead.cityName}, {lead.stateAbbr}</span>
-        {lead.boatSize && (
-          <span>{BOAT_SIZE_LABELS[lead.boatSize as keyof typeof BOAT_SIZE_LABELS] ?? lead.boatSize}</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// LEAD DETAIL PANEL (slide-in)
-// ─────────────────────────────────────────────
-
-function LeadDetailPanel({
-  lead,
-  onClose,
-  onUnlocked,
-  hasPayment,
-}: {
-  lead: SerializedAvailableLead;
-  onClose: () => void;
-  onUnlocked: (leadId: string, contact: { name: string; email: string; phone: string }) => void;
-  hasPayment: boolean;
-}) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleUnlock() {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/leads/${lead.id}/unlock`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to unlock lead");
-      onUnlocked(lead.id, {
-        name: data.customerName,
-        email: data.customerEmail,
-        phone: data.customerPhone,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 cda-fade-in"
-        onClick={onClose}
-      />
-      {/* Panel */}
-      <div className="fixed right-0 top-0 bottom-0 w-full max-w-md tactical-glass-solid z-50 flex flex-col cda-slide-right overflow-y-auto dark-scroll">
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-white/8 shrink-0">
-          <div>
-            <h2 className="text-white font-bold text-lg tracking-tight-custom">Lead Details</h2>
-            <p className="text-white/40 text-xs mt-0.5">Review before unlocking</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/8 transition-all"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="flex-1 p-5 space-y-4">
-          {/* Price badge */}
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-[#ff385c]/20 to-[#ff385c]/5 border border-[#ff385c]/25">
-            <div>
-              <p className="text-white/50 text-xs font-semibold uppercase tracking-wider">Unlock Price</p>
-              <p className="text-[#ff385c] font-bold text-3xl tracking-tight-custom mt-1">${lead.leadPrice.toFixed(2)}</p>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-[#ff385c]/20 flex items-center justify-center">
-              <Zap className="h-5 w-5 text-[#ff385c]" />
-            </div>
-          </div>
-
-          {/* Service info */}
-          <GlassCard>
-            <p className="text-white/35 text-xs font-semibold uppercase tracking-wider mb-3">Request Info</p>
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-white/50">Customer</span>
-                <span className="text-white font-medium">{lead.customerName}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-white/50">Service</span>
-                <span className="text-white font-medium">{lead.serviceName}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-white/50">Vehicle</span>
-                <VehicleTypeBadge type={lead.vehicleType} />
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-white/50">Location</span>
-                <span className="text-white font-medium">{lead.cityName}, {lead.stateAbbr}</span>
-              </div>
-              {lead.boatSize && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-white/50">Boat Size</span>
-                  <span className="text-white font-medium">
-                    {BOAT_SIZE_LABELS[lead.boatSize as keyof typeof BOAT_SIZE_LABELS] ?? lead.boatSize}
-                  </span>
-                </div>
-              )}
-              {lead.boatType && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-white/50">Boat Type</span>
-                  <span className="text-white font-medium">{lead.boatType}</span>
-                </div>
-              )}
-              {lead.boatMake && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-white/50">Make</span>
-                  <span className="text-white font-medium">{lead.boatMake}</span>
-                </div>
-              )}
-              {lead.boatYear && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-white/50">Year</span>
-                  <span className="text-white font-medium">{lead.boatYear}</span>
-                </div>
-              )}
-            </div>
-          </GlassCard>
-
-          {lead.notes && (
-            <GlassCard>
-              <p className="text-white/35 text-xs font-semibold uppercase tracking-wider mb-2">Customer Notes</p>
-              <p className="text-white/70 text-sm leading-relaxed">{lead.notes}</p>
-            </GlassCard>
-          )}
-
-          {/* What you get */}
-          <GlassCard>
-            <p className="text-white/35 text-xs font-semibold uppercase tracking-wider mb-3">After Unlocking</p>
-            <div className="space-y-2.5">
-              {[
-                { icon: <Phone className="h-4 w-4" />, text: "Full phone number" },
-                { icon: <Mail className="h-4 w-4" />, text: "Email address" },
-                { icon: <User className="h-4 w-4" />, text: "Full customer name" },
-              ].map((item) => (
-                <div key={item.text} className="flex items-center gap-3 text-sm">
-                  <div className="text-[#ff385c]">{item.icon}</div>
-                  <span className="text-white/60">{item.text}</span>
-                </div>
-              ))}
-            </div>
-          </GlassCard>
-
-          {!hasPayment && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-              <AlertCircle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-amber-300 text-sm">
-                You need a payment method on file to unlock leads.{" "}
-                <button className="underline font-semibold">Set up billing →</button>
-              </p>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-              <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
-              <p className="text-red-300 text-sm">{error}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="p-5 border-t border-white/8 shrink-0 space-y-3">
-          <button
-            className="coral-btn w-full justify-center text-base py-3"
-            disabled={!hasPayment || loading}
-            onClick={handleUnlock}
-          >
-            {loading ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Charging card…</>
-            ) : (
-              <><Zap className="h-4 w-4" /> Unlock Lead — ${lead.leadPrice.toFixed(2)}</>
-            )}
-          </button>
-          <p className="text-white/25 text-xs text-center">
-            Your card will be charged immediately. No refunds except for invalid leads.
-          </p>
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ─────────────────────────────────────────────
-// HOOK: time ago
-// ─────────────────────────────────────────────
-
-function useTimeAgo(isoString: string): string {
-  const diff = Date.now() - new Date(isoString).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
-// ─────────────────────────────────────────────
-// ONBOARDING VIEW
-// ─────────────────────────────────────────────
-
-type OnboardingFormData = {
-  companyName: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  phone: string;
-  email: string;
-  website: string;
-  vehicleTypes: string[];
-  carServices: string[];
-  boatServices: string[];
-  serviceRadius: string;
-  notifyEmail: boolean;
-  notifyCall: boolean;
-  notifySms: boolean;
-  agreeLeads: boolean;
-  agreeToS: boolean;
-};
-
-const ONBOARDING_STEPS = [
-  { label: "Business Info", icon: Building2 },
-  { label: "Services", icon: Wrench },
-  { label: "Notifications", icon: Bell },
-  { label: "Review", icon: ClipboardList },
+const INITIAL_AVAILABLE: Lead[] = [
+  { id: 1, type: 'boat', title: '44ft Azimut Flybridge', service: 'Full Detail', subService: 'Wax & Compound', location: 'Miami Beach, FL', price: 24, specs: '44ft Flybridge' },
+  { id: 2, type: 'car', title: 'Porsche 911 GT3', service: 'Paint Correction', subService: 'Ceramic Coating', location: 'St. Petersburg, FL', price: 18, specs: '992 Gen' },
+  { id: 3, type: 'boat', title: '32ft Boston Whaler', service: 'Wash', subService: 'Maintenance', location: 'Tampa Bay, FL', price: 12, specs: '32ft CC' },
+  { id: 4, type: 'car', title: 'Tesla Model S Plaid', service: 'Full Detail', subService: 'Interior/Exterior', location: 'Clearwater, FL', price: 15, specs: '2024 Model' },
+  { id: 5, type: 'boat', title: '60ft Sea Ray L650', service: 'Ceramic', subService: 'Hull & Topside', location: 'Fort Lauderdale, FL', price: 45, specs: '60ft Yacht' },
+  { id: 6, type: 'car', title: 'BMW M4 Competition', service: 'Window Tint', subService: 'Ceramic Tint', location: 'Tampa, FL', price: 10, specs: 'G82 Chassis' },
+  { id: 7, type: 'boat', title: '24ft Grady-White', service: 'Wax', subService: 'Full Polish', location: 'Anna Maria Island, FL', price: 20, specs: '24ft WA' },
+  { id: 8, type: 'car', title: 'Ferrari F8 Tributo', service: 'Ceramic', subService: 'Multi-Stage', location: 'Naples, FL', price: 50, specs: '2025 Model' },
+  { id: 9, type: 'boat', title: '38ft Tiara Yachts', service: 'Full Detail', subService: 'Cabin', location: 'Destin, FL', price: 35, specs: '38ft LS' },
 ];
 
-function OnboardingStepIndicator({ current }: { current: number }) {
+const INITIAL_PURCHASED: PurchasedLead[] = [
+  { id: 101, type: 'boat', title: '55ft Sunseeker Predator', service: 'Full Detail', subService: 'Polish', location: 'Sarasota, FL', price: 32, specs: '55ft Yacht', customerName: 'Robert Vance', phone: '(941) 555-0128', email: 'rvance@marina-villas.com', customerAddress: 'Sarasota, FL', servicesRequested: ['Teak Restoration', 'Ceramic Coating'], purchasedAt: '2h ago' },
+  { id: 102, type: 'car', title: 'Range Rover SV', service: 'Full Detail', subService: 'Interior', location: 'Naples, FL', price: 15, specs: '2025 Autobiography', customerName: 'Sarah Miller', phone: '(239) 555-8842', email: 'smiller@icloud.com', customerAddress: 'Naples, FL', servicesRequested: ['Leather Condition', 'Clay Bar', 'Wheel Coating'], purchasedAt: 'Yesterday' }
+];
+
+// --- Types ---
+interface Lead {
+  id: number;
+  type: string;
+  title: string;
+  service: string;
+  subService: string;
+  location: string;
+  price: number;
+  specs: string;
+}
+
+interface PurchasedLead extends Lead {
+  customerName: string;
+  phone: string;
+  email: string;
+  customerAddress: string;
+  servicesRequested: string[];
+  purchasedAt: string;
+}
+
+interface ProfileData {
+  name: string;
+  address: string;
+  serviceArea: string;
+  website: string;
+  radius: number;
+  phone: string;
+  email: string;
+  specialization: string;
+  services: string[];
+}
+
+// --- Functional Components ---
+
+function SidebarItem({ icon: Icon, label, active, onClick }: { icon: any; label: string; active: boolean; onClick: () => void }) {
   return (
-    <div className="flex items-center justify-center gap-2 mb-8">
-      {ONBOARDING_STEPS.map((step, i) => {
-        const Icon = step.icon;
-        const done = i < current;
-        const active = i === current;
-        return (
-          <div key={i} className="flex items-center gap-2">
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              done ? "bg-[#ff385c]/20 text-[#ff385c] border border-[#ff385c]/30"
-              : active ? "bg-[#ff385c] text-white shadow-lg shadow-[#ff385c]/25"
-              : "bg-white/8 text-white/30 border border-transparent"
-            }`}>
-              {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{step.label}</span>
-            </div>
-            {i < ONBOARDING_STEPS.length - 1 && (
-              <div className={`h-px w-4 ${i < current ? "bg-[#ff385c]/40" : "bg-white/10"}`} />
-            )}
-          </div>
-        );
-      })}
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition-all duration-300 ${
+        active ? 'bg-black text-white shadow-lg' : 'text-gray-500 hover:bg-gray-100 hover:text-black'
+      }`}
+    >
+      <Icon size={15} strokeWidth={active ? 2.5 : 2} />
+      <span className={`text-[12px] font-bold ${active ? 'opacity-100' : 'opacity-80'}`}>{label}</span>
+      {active && <div className="ml-auto w-1 h-1 rounded-full bg-[#ff385c]" />}
+    </button>
+  );
+}
+
+function MobileNavItem({ icon: Icon, label, active, onClick }: { icon: any; label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-center justify-center flex-1 py-1 gap-1 transition-all ${
+        active ? 'text-[#ff385c]' : 'text-gray-400'
+      }`}
+    >
+      <Icon size={18} strokeWidth={active ? 2.5 : 2} />
+      <span className="text-[9px] font-bold uppercase tracking-tighter">{label}</span>
+    </button>
+  );
+}
+
+function LeadTile({ lead, purchased = false, onOpen }: { lead: Lead | PurchasedLead; purchased?: boolean; onOpen: (lead: Lead | PurchasedLead) => void }) {
+  return (
+    <div
+      onClick={() => onOpen(lead)}
+      className="tactical-glass group relative rounded-2xl p-4 transition-all duration-500 cursor-pointer flex flex-col gap-3 overflow-hidden border border-white/5 shadow-md active:scale-95 md:active:scale-100"
+    >
+      <div className="absolute -top-4 -right-4 opacity-[0.04] group-hover:opacity-[0.1] transition-opacity text-white pointer-events-none">
+        {lead.type === 'boat' ? <Ship size={70} /> : <Car size={70} />}
+      </div>
+      <div className="flex justify-between items-center relative z-10">
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center border ${purchased ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-[#ff385c]/10 border-[#ff385c]/20 text-[#ff385c]'}`}>
+          {lead.type === 'boat' ? <Ship size={14} /> : <Car size={14} />}
+        </div>
+        {!purchased ? (
+          <div className="text-[14px] font-black text-white tracking-tighter">${lead.price}</div>
+        ) : (
+          <div className="text-[7px] font-black uppercase tracking-[0.2em] text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded border border-emerald-400/20">Claimed</div>
+        )}
+      </div>
+      <div className="relative z-10 flex-1">
+        <h3 className="text-[13px] font-bold text-white tracking-tight leading-tight group-hover:text-[#ff385c] transition-colors line-clamp-1">{lead.title}</h3>
+        <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest block mt-1">{lead.service}</span>
+      </div>
+      <div className="space-y-1.5 relative z-10">
+        <div className="flex items-center gap-1.5 text-zinc-400 text-[10px] font-medium truncate">
+          <MapPin size={9} className="text-[#ff385c]" />
+          {lead.location}
+        </div>
+        <div className="flex items-center justify-between pt-1.5 border-t border-white/5">
+          <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.1em]">{lead.specs}</span>
+          <ChevronRight size={12} className="text-[#ff385c] group-hover:translate-x-1 transition-transform" />
+        </div>
+      </div>
     </div>
   );
 }
 
-function OnboardingView({ onComplete }: { onComplete: () => void }) {
-  const [step, setStep] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+function LeadDetailPanel({ lead, onClose, purchased, onPurchase }: { lead: Lead | PurchasedLead | null; onClose: () => void; purchased: boolean; onPurchase: (id: number) => void }) {
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  if (!lead) return null;
 
-  const [form, setForm] = useState<OnboardingFormData>({
-    companyName: "", address: "", city: "", state: "", zipCode: "",
-    phone: "", email: "", website: "",
-    vehicleTypes: [], carServices: [], boatServices: [],
-    serviceRadius: "25",
-    notifyEmail: true, notifyCall: false, notifySms: false,
-    agreeLeads: false, agreeToS: false,
-  });
+  const handlePurchaseLead = async () => {
+    setIsPurchasing(true);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    onPurchase(lead.id);
+    setIsPurchasing(false);
+  };
 
-  function set<K extends keyof OnboardingFormData>(key: K, value: OnboardingFormData[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }
-
-  function toggleArr(key: "vehicleTypes" | "carServices" | "boatServices", value: string) {
-    setForm((prev) => {
-      const arr = prev[key] as string[];
-      return { ...prev, [key]: arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value] };
-    });
-  }
-
-  function canProceed(): boolean {
-    if (step === 0) return !!(form.companyName && form.city && form.state && form.zipCode && form.phone && form.email);
-    if (step === 1) {
-      const hasVehicle = form.vehicleTypes.length > 0;
-      const hasCarService = form.vehicleTypes.includes("cars") ? form.carServices.length > 0 : true;
-      const hasBoatService = form.vehicleTypes.includes("boats") ? form.boatServices.length > 0 : true;
-      return hasVehicle && hasCarService && hasBoatService;
-    }
-    if (step === 2) return form.agreeLeads && form.agreeToS;
-    return true;
-  }
-
-  async function handleSubmit() {
-    setIsSubmitting(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/company/onboarding", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Setup failed. Please try again.");
-      }
-      onComplete();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-      setIsSubmitting(false);
-    }
-  }
+  const purchasedLead = lead as PurchasedLead;
 
   return (
-    <div className="min-h-screen bg-[#0a0a12] flex flex-col items-center justify-start pt-12 pb-20 px-4">
-      <TypographyStyle />
-
-      {/* Logo */}
-      <Link href="/" className="flex items-center gap-2.5 mb-10 group">
-        <div className="w-9 h-9 rounded-xl bg-[#ff385c]/20 border border-[#ff385c]/30 flex items-center justify-center group-hover:bg-[#ff385c]/30 transition-all">
-          <Anchor className="h-5 w-5 text-[#ff385c]" />
-        </div>
-        <span className="text-white font-bold text-lg tracking-tight-custom">DetailHub</span>
-      </Link>
-
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 bg-[#ff385c]/15 text-[#ff385c] border border-[#ff385c]/25 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider mb-4">
-            <Sparkles className="h-3 w-3" /> Partner Setup
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight-custom text-white">Welcome aboard!</h1>
-          <p className="text-white/40 mt-2 text-sm">Set up your profile so customers can find you.</p>
-        </div>
-
-        <OnboardingStepIndicator current={step} />
-
-        <div className="tactical-glass rounded-2xl p-7 cda-fade-up">
-
-          {/* Step 0: Business Info */}
-          {step === 0 && (
-            <div className="space-y-5">
-              <h2 className="text-white font-bold text-lg tracking-tight-custom">Business Information</h2>
-
-              <div className="space-y-1.5">
-                <label className="text-white/60 text-xs font-semibold uppercase tracking-wider">Business Name <span className="text-[#ff385c]">*</span></label>
-                <input className="glass-input" placeholder="Coastal Detail Co." value={form.companyName} onChange={e => set("companyName", e.target.value)} />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-white/60 text-xs font-semibold uppercase tracking-wider">Street Address</label>
-                <input className="glass-input" placeholder="123 Marina Blvd" value={form.address} onChange={e => set("address", e.target.value)} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wider">City <span className="text-[#ff385c]">*</span></label>
-                  <input className="glass-input" placeholder="Miami" value={form.city} onChange={e => set("city", e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wider">State <span className="text-[#ff385c]">*</span></label>
-                  <select className="glass-input" value={form.state} onChange={e => set("state", e.target.value)}>
-                    <option value="">Select…</option>
-                    {US_STATES.map(s => <option key={s.abbr} value={s.abbr}>{s.name}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wider">Zip Code <span className="text-[#ff385c]">*</span></label>
-                  <input className="glass-input" placeholder="33101" value={form.zipCode} onChange={e => set("zipCode", e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wider">Phone <span className="text-[#ff385c]">*</span></label>
-                  <input className="glass-input" type="tel" placeholder="(305) 555-0100" value={form.phone} onChange={e => set("phone", e.target.value)} />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-white/60 text-xs font-semibold uppercase tracking-wider">Business Email <span className="text-[#ff385c]">*</span></label>
-                <input className="glass-input" type="email" placeholder="hello@coastaldetail.com" value={form.email} onChange={e => set("email", e.target.value)} />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-white/60 text-xs font-semibold uppercase tracking-wider">Website <span className="text-white/25 normal-case font-normal">(optional)</span></label>
-                <input className="glass-input" type="url" placeholder="https://coastaldetail.com" value={form.website} onChange={e => set("website", e.target.value)} />
-              </div>
+    <div className="fixed inset-0 z-[400] flex justify-end">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full md:max-w-lg bg-white h-full shadow-2xl overflow-y-auto border-l border-gray-100 rounded-t-[2.5rem] md:rounded-none mt-12 md:mt-0">
+        <div className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 p-4 flex items-center justify-between z-20">
+          <div className="flex items-center gap-2.5">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${purchased ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-[#ff385c]/10 border-[#ff385c]/20 text-[#ff385c]'}`}>
+              {lead.type === 'boat' ? <Ship size={16} /> : <Car size={16} />}
             </div>
-          )}
+            <div>
+              <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 block leading-none">Dossier #{lead.id}</span>
+              <h2 className="text-base font-bold text-black tracking-tight leading-tight">{lead.title}</h2>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-400"><X size={18} /></button>
+        </div>
 
-          {/* Step 1: Services */}
-          {step === 1 && (
+        <div className="p-5 space-y-6 pb-24 md:pb-20">
+          <div className="bg-[#0D0D0E] rounded-[2rem] p-6 text-white relative overflow-hidden shadow-xl border border-white/5">
+            <div className="flex justify-between items-start relative z-10">
+              <div className="space-y-0.5">
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[#ff385c]">Service Scope</span>
+                <h3 className="text-lg font-bold tracking-tight">{lead.service}</h3>
+                <p className="text-zinc-400 text-[11px] font-medium italic">{lead.subService}</p>
+              </div>
+              {!purchased && <div className="text-xl font-black tracking-tighter">${lead.price}</div>}
+            </div>
+            <div className="flex flex-wrap gap-2 mt-5 relative z-10">
+              <div className="bg-white/5 px-2.5 py-1 rounded-lg flex items-center gap-1.5 border border-white/10"><Maximize2 size={10} className="text-blue-400" /><span className="text-[10px] font-bold">{lead.specs}</span></div>
+              <div className="bg-white/5 px-2.5 py-1 rounded-lg flex items-center gap-1.5 border border-white/10"><MapPin size={10} className="text-[#ff385c]" /><span className="text-[10px] font-bold">{lead.location}</span></div>
+            </div>
+            {!purchased && (
+              <button
+                onClick={handlePurchaseLead}
+                disabled={isPurchasing}
+                className="w-full mt-5 bg-[#ff385c] text-white py-3.5 md:py-3 rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-[#e31c5f] transition-all shadow-lg flex items-center justify-center gap-2"
+              >
+                {isPurchasing ? <><Loader2 size={14} className="animate-spin-custom" />Processing...</> : <>Purchase Lead Access</>}
+              </button>
+            )}
+          </div>
+
+          {purchased && (
             <div className="space-y-6">
-              <h2 className="text-white font-bold text-lg tracking-tight-custom">Services Offered</h2>
-
-              <div className="space-y-3">
-                <label className="text-white/60 text-xs font-semibold uppercase tracking-wider">Vehicle types <span className="text-[#ff385c]">*</span></label>
-                <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2 text-[9px] font-black text-gray-400 uppercase tracking-widest px-1"><ShieldCheck size={12} className="text-emerald-500" /><span>Service Checklist</span></div>
+                <div className="flex flex-wrap gap-1.5">{purchasedLead.servicesRequested?.map((s: string, i: number) => (<span key={i} className="text-[10px] font-bold bg-gray-100 text-gray-600 px-2.5 py-1 rounded-lg border border-gray-200">{s}</span>))}</div>
+              </div>
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2 text-[9px] font-black text-gray-400 uppercase tracking-widest px-1"><User size={12} className="text-blue-500" /><span>Customer Intel</span></div>
+                <div className="grid grid-cols-1 gap-1">
                   {[
-                    { value: "cars", label: "🚗 Cars / Trucks / SUVs" },
-                    { value: "boats", label: "⛵ Boats / Watercraft" },
-                  ].map(({ value, label }) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => toggleArr("vehicleTypes", value)}
-                      className={`p-4 rounded-xl border-2 text-sm font-semibold text-left transition-all ${
-                        form.vehicleTypes.includes(value)
-                          ? "border-[#ff385c] bg-[#ff385c]/10 text-[#ff385c]"
-                          : "border-white/10 bg-white/4 text-white/50 hover:border-white/20 hover:text-white/70"
-                      }`}
-                    >
-                      {label}
-                    </button>
+                    { label: 'Full Name', value: purchasedLead.customerName || 'Pending...', icon: User },
+                    { label: 'Phone', value: purchasedLead.phone || 'Pending...', icon: Phone, color: 'text-[#ff385c]' },
+                    { label: 'Email', value: purchasedLead.email || 'Pending...', icon: Mail },
+                    { label: 'Location', value: purchasedLead.customerAddress || lead.location, icon: MapPin },
+                  ].map((field, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                      <div className="flex items-center gap-2.5"><field.icon size={12} className="text-gray-300" /><span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{field.label}</span></div>
+                      <span className={`text-[11px] font-bold ${field.color || 'text-black'}`}>{String(field.value)}</span>
+                    </div>
                   ))}
                 </div>
               </div>
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-3"><div className="text-blue-500 mt-0.5"><Info size={16} /></div><div><h4 className="text-[8px] font-black text-blue-600 uppercase tracking-widest mb-1 leading-none">Service Setup</h4><p className="text-[11px] font-medium text-blue-800 leading-relaxed italic">Confirm with the customer if you&apos;re traveling to them or if they&apos;re dropping off at your shop.</p></div></div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-              {form.vehicleTypes.includes("cars") && (
-                <div className="space-y-3">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wider">Car / Truck Services</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {CAR_SERVICES.map(({ label, value }) => (
-                      <GlassCheckbox
-                        key={value}
-                        checked={form.carServices.includes(value)}
-                        onChange={() => toggleArr("carServices", value)}
-                        label={label}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+function ReceiptModal({ transaction, onClose }: { transaction: PurchasedLead | null; onClose: () => void }) {
+  if (!transaction) return null;
+  return (
+    <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
+       <div className="fixed inset-0 bg-black/75 backdrop-blur-xl" onClick={onClose} />
+       <div className="relative bg-white w-full max-w-[320px] rounded-[2.5rem] shadow-2xl overflow-hidden">
+          <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+             <div className="flex items-center gap-1.5 text-[#ff385c]"><Zap size={13} fill="currentColor" /><span className="font-black uppercase tracking-tighter text-[10px]">Merchant Receipt</span></div>
+             <button onClick={onClose} className="p-1.5 hover:bg-gray-200 rounded-full transition-colors text-gray-400"><X size={16} /></button>
+          </div>
+          <div className="p-6 space-y-6 text-center">
+             <div><div className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 mb-1">Success</div><div className="text-4xl font-black text-black tracking-tighter">${transaction.price}.00</div></div>
+             <div className="space-y-2 pt-4 border-t border-dashed border-gray-200 text-left">
+                <div className="flex justify-between items-center"><span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Lead</span><span className="text-[10px] font-bold text-black truncate ml-4">{transaction.title}</span></div>
+                <div className="flex justify-between items-center"><span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Date</span><span className="text-[10px] font-bold text-black">{transaction.purchasedAt || 'Now'}</span></div>
+                <div className="flex justify-between items-center"><span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Method</span><span className="text-[10px] font-bold text-black">Visa ••4242</span></div>
+             </div>
+             <button className="w-full bg-black text-white py-3.5 rounded-2xl font-black uppercase tracking-[0.2em] text-[9px] flex items-center justify-center gap-2 hover:bg-zinc-800 transition-all">
+                <Download size={14} /> Download PDF
+             </button>
+          </div>
+       </div>
+    </div>
+  );
+}
 
-              {form.vehicleTypes.includes("boats") && (
-                <div className="space-y-3">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wider">Boat / Marine Services</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {BOAT_SERVICES.map(({ label, value }) => (
-                      <GlassCheckbox
-                        key={value}
-                        checked={form.boatServices.includes(value)}
-                        onChange={() => toggleArr("boatServices", value)}
-                        label={label}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+function OnboardingView({ onComplete }: { onComplete: (data: any) => void }) {
+  const [step, setStep] = useState(1);
+  const [specialization, setSpecialization] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ name: '', website: '', phone: '', address: 'St. Petersburg, FL', serviceArea: 'Tampa Bay', radius: 35, services: [] as string[] });
+  const nextStep = () => setStep(s => s + 1);
+  const prevStep = () => setStep(s => s - 1);
+  const toggleService = (s: string) => setFormData(prev => ({ ...prev, services: prev.services.includes(s) ? prev.services.filter(x => x !== s) : [...prev.services, s] }));
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wider">Service radius</label>
-                  <span className="text-white font-bold text-sm">{form.serviceRadius} mi</span>
-                </div>
-                <input
-                  type="range"
-                  className="accent-slider w-full"
-                  min="10" max="100" step="5"
-                  value={form.serviceRadius}
-                  onChange={e => set("serviceRadius", e.target.value)}
-                />
-                <div className="flex justify-between text-white/25 text-xs">
-                  <span>10 mi</span><span>50 mi</span><span>100 mi</span>
-                </div>
+  return (
+    <div className="fixed inset-0 z-[600] bg-[#F8F9FA] flex flex-col items-center justify-center p-4 md:p-6 overflow-y-auto">
+      <div className="w-full max-w-2xl">
+        <div className="text-center mb-8 md:mb-10 px-4">
+          <div className="bg-black w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center mx-auto text-white shadow-2xl mb-4 md:mb-6"><Sparkles size={24} /></div>
+          <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-black uppercase mb-1 md:mb-2 leading-tight">Welcome to DetailHub</h1>
+          <p className="text-gray-400 font-bold text-[11px] md:text-base tracking-tight uppercase">Let&apos;s configure your terminal settings.</p>
+        </div>
+        <div className="flex gap-1.5 md:gap-2 mb-8 md:mb-10 px-8 md:px-12">
+          {[1, 2, 3, 4].map(i => <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-500 ${step >= i ? 'bg-[#ff385c]' : 'bg-gray-200'}`} />)}
+        </div>
+        <div className="bg-white border border-gray-200 rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.08)]">
+          {step === 1 && (
+            <div className="space-y-6 md:space-y-8 text-center">
+              <div><h2 className="text-lg md:text-xl font-black uppercase tracking-tight mb-1">Identify Specialization</h2><p className="text-gray-400 font-medium text-[11px] md:text-sm">Which assets do you primarily service?</p></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <button onClick={() => { setSpecialization('boat'); nextStep(); }} className="group h-32 md:h-48 border-2 border-gray-100 rounded-2xl md:rounded-[2.5rem] flex md:flex-col items-center justify-center gap-4 px-6 md:px-0 hover:border-[#ff385c] hover:bg-[#ff385c]/5 transition-all text-left md:text-center"><Ship size={32} className="text-gray-300 group-hover:text-[#ff385c]" /><span className="font-black uppercase tracking-widest text-[10px] md:text-[11px]">Marine Detailing</span></button>
+                <button onClick={() => { setSpecialization('car'); nextStep(); }} className="group h-32 md:h-48 border-2 border-gray-100 rounded-2xl md:rounded-[2.5rem] flex md:flex-col items-center justify-center gap-4 px-6 md:px-0 hover:border-[#ff385c] hover:bg-[#ff385c]/5 transition-all text-left md:text-center"><Car size={32} className="text-gray-300 group-hover:text-[#ff385c]" /><span className="font-black uppercase tracking-widest text-[10px] md:text-[11px]">Automotive Detailing</span></button>
               </div>
             </div>
           )}
-
-          {/* Step 2: Notifications */}
           {step === 2 && (
-            <div className="space-y-6">
-              <h2 className="text-white font-bold text-lg tracking-tight-custom">Notifications & Consent</h2>
-
-              <div className="space-y-3">
-                <label className="text-white/60 text-xs font-semibold uppercase tracking-wider">Notify me about new leads via</label>
-                <div className="space-y-3 p-4 rounded-xl bg-white/4 border border-white/8">
-                  <GlassCheckbox checked={form.notifyEmail} onChange={v => set("notifyEmail", v)} label="Email" />
-                  <GlassCheckbox checked={form.notifyCall} onChange={v => set("notifyCall", v)} label="Phone call (urgent / high-value)" />
-                  <GlassCheckbox checked={form.notifySms} onChange={v => set("notifySms", v)} label="SMS text message" />
-                </div>
+            <div className="space-y-6 md:space-y-8">
+              <div className="text-center"><h2 className="text-lg md:text-xl font-black uppercase tracking-tight mb-1 md:mb-2">Business Profile</h2><p className="text-gray-400 font-medium text-[11px] md:text-sm italic uppercase tracking-widest opacity-60">Company information for client outreach.</p></div>
+              <div className="grid grid-cols-1 gap-4">
+                {[
+                  { label: 'Company Name', icon: Building2, name: 'name', ph: 'Anchor Detailing Co.' },
+                  { label: 'Website', icon: Globe, name: 'website', ph: 'www.anchordetailing.com' },
+                  { label: 'Phone', icon: Phone, name: 'phone', ph: '(555) 000-0000' }
+                ].map((f, i) => (
+                  <div key={i} className="space-y-1"><label className="text-[8px] font-black uppercase tracking-widest text-gray-400 ml-1">{f.label}</label><div className="relative group"><f.icon size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#ff385c]" /><input type="text" placeholder={f.ph} value={(formData as any)[f.name] || ''} onChange={e => setFormData({...formData, [f.name]: e.target.value})} className="w-full bg-gray-50 border border-transparent rounded-xl py-3.5 pl-11 pr-5 font-bold text-sm outline-none focus:bg-white focus:border-[#ff385c] transition-all" /></div></div>
+                ))}
               </div>
-
-              <div className="space-y-3">
-                <label className="text-white/60 text-xs font-semibold uppercase tracking-wider">Required agreements</label>
-                <div className="space-y-3 p-4 rounded-xl bg-white/4 border border-white/8">
-                  <GlassCheckbox
-                    checked={form.agreeLeads}
-                    onChange={v => set("agreeLeads", v)}
-                    label="I agree to receive lead notifications from DetailHub"
-                    required
-                  />
-                  <GlassCheckbox
-                    checked={form.agreeToS}
-                    onChange={v => set("agreeToS", v)}
-                    label={<>I agree to the <a href="/terms" className="text-[#ff385c] underline" target="_blank">Terms of Service</a> and <a href="/privacy" className="text-[#ff385c] underline" target="_blank">Privacy Policy</a></>}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/8 border border-blue-500/15">
-                <Shield className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
-                <p className="text-blue-300 text-sm">
-                  <strong className="text-blue-200">No monthly fees.</strong> You&apos;re only charged when you unlock a lead. Lead prices range from $15–$45.
-                </p>
-              </div>
+              <button onClick={nextStep} className="w-full bg-black text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-zinc-800 transition-all flex items-center justify-center gap-2">Continue <ChevronRight size={16} /></button>
             </div>
           )}
-
-          {/* Step 3: Review */}
           {step === 3 && (
-            <div className="space-y-5">
-              <h2 className="text-white font-bold text-lg tracking-tight-custom">Review & Complete Setup</h2>
-
-              <div className="space-y-3 text-sm">
-                <div className="rounded-xl border border-white/8 bg-white/4 p-4 space-y-2">
-                  <p className="text-white/35 text-xs font-semibold uppercase tracking-wider">Business</p>
-                  <p className="font-bold text-white text-base">{form.companyName}</p>
-                  {form.address && <p className="text-white/50">{form.address}</p>}
-                  <p className="text-white/50">{form.city}, {form.state} {form.zipCode}</p>
-                  <p className="text-white/50">{form.phone}</p>
-                  <p className="text-white/50">{form.email}</p>
-                  {form.website && <p className="text-white/50">{form.website}</p>}
-                </div>
-
-                <div className="rounded-xl border border-white/8 bg-white/4 p-4 space-y-2">
-                  <p className="text-white/35 text-xs font-semibold uppercase tracking-wider">Services</p>
-                  <p className="text-white/60">
-                    <span className="text-white/80 font-medium">Vehicles:</span>{" "}
-                    {form.vehicleTypes.map(v => v === "cars" ? "Cars/Trucks/SUVs" : "Boats/Watercraft").join(", ") || "None"}
-                  </p>
-                  {form.carServices.length > 0 && (
-                    <p className="text-white/60">
-                      <span className="text-white/80 font-medium">Car:</span>{" "}
-                      {CAR_SERVICES.filter(s => form.carServices.includes(s.value)).map(s => s.label).join(", ")}
-                    </p>
-                  )}
-                  {form.boatServices.length > 0 && (
-                    <p className="text-white/60">
-                      <span className="text-white/80 font-medium">Boat:</span>{" "}
-                      {BOAT_SERVICES.filter(s => form.boatServices.includes(s.value)).map(s => s.label).join(", ")}
-                    </p>
-                  )}
-                  <p className="text-white/60"><span className="text-white/80 font-medium">Radius:</span> {form.serviceRadius} miles</p>
-                </div>
-
-                <div className="rounded-xl border border-white/8 bg-white/4 p-4 space-y-2">
-                  <p className="text-white/35 text-xs font-semibold uppercase tracking-wider">Notifications</p>
-                  <div className="flex flex-wrap gap-2">
-                    {form.notifyEmail && <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-xs font-semibold px-2.5 py-1 rounded-full">Email</span>}
-                    {form.notifyCall && <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-xs font-semibold px-2.5 py-1 rounded-full">Phone</span>}
-                    {form.notifySms && <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-xs font-semibold px-2.5 py-1 rounded-full">SMS</span>}
-                  </div>
-                </div>
+            <div className="space-y-6 md:space-y-8">
+              <div className="text-center"><h2 className="text-lg md:text-xl font-black uppercase tracking-tight mb-2">Select Your Services</h2><p className="text-gray-400 font-medium text-[11px] md:text-sm italic">Matched leads will use these choices.</p></div>
+              <div className="flex flex-wrap justify-center gap-1.5 md:gap-2">
+                {(specialization === 'boat' ? MARINE_SERVICES : AUTO_SERVICES).map(s => (
+                  <button key={s} onClick={() => toggleService(s)} className={`px-4 py-2.5 md:px-5 md:py-3 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest border transition-all ${formData.services.includes(s) ? 'bg-[#ff385c] border-[#ff385c] text-white shadow-lg' : 'bg-white border-gray-100 text-gray-400 hover:border-black'}`}>{formData.services.includes(s) && <Check size={12} className="inline mr-1" />}{s}</button>
+                ))}
               </div>
-
-              {error && (
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-                  <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
-                  <p className="text-red-300 text-sm">{error}</p>
-                </div>
-              )}
+              <div className="flex gap-3">
+                <button onClick={prevStep} className="px-5 border border-gray-100 rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-gray-50 transition-all">Back</button>
+                <button onClick={nextStep} className="flex-1 bg-black text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-zinc-800 transition-all">Set Dispatch Radius</button>
+              </div>
             </div>
           )}
-
-          {/* Navigation */}
-          <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/8">
-            {step > 0 ? (
-              <button className="ghost-btn" onClick={() => setStep(s => s - 1)}>
-                <ChevronLeft className="h-4 w-4" /> Back
-              </button>
-            ) : (
-              <div />
-            )}
-            {step < 3 ? (
-              <button className="coral-btn" disabled={!canProceed()} onClick={() => setStep(s => s + 1)}>
-                Continue <ChevronRight className="h-4 w-4" />
-              </button>
-            ) : (
-              <button className="coral-btn px-8 py-3 text-base" disabled={isSubmitting} onClick={handleSubmit}>
-                {isSubmitting
-                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Setting up…</>
-                  : <><CheckCircle2 className="h-4 w-4" /> Complete Setup</>
-                }
-              </button>
-            )}
-          </div>
+          {step === 4 && (
+            <div className="space-y-6 md:space-y-8">
+              <div className="text-center"><h2 className="text-lg md:text-xl font-black uppercase tracking-tight mb-2">Territory Logistics</h2><p className="text-gray-400 font-medium text-[11px] md:text-sm italic">Define your travel radius.</p></div>
+              <div className="space-y-6 md:space-y-8">
+                 <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-[2rem] border border-gray-100 relative overflow-hidden">
+                    <div className="flex justify-between items-center mb-6 relative z-10"><span className="text-[9px] font-black uppercase tracking-widest text-gray-400 leading-none">Travel Radius</span><span className="text-2xl font-black text-[#ff385c] tracking-tighter">{formData.radius} mi</span></div>
+                    <input type="range" min="5" max="150" step="5" value={formData.radius} onChange={e => setFormData({...formData, radius: parseInt(e.target.value)})} className="w-full mb-2 relative z-10" />
+                    <div className="flex justify-between text-[8px] font-black text-gray-300 uppercase tracking-widest leading-none"><span>Local</span><span>Regional</span></div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-3 md:gap-4">
+                   <div className="space-y-1"><label className="text-[8px] font-black uppercase tracking-widest text-gray-400 ml-1">City</label><input type="text" placeholder="St. Petersburg" className="w-full bg-gray-50 border border-transparent rounded-xl py-3.5 px-5 font-bold text-sm outline-none focus:bg-white" /></div>
+                   <div className="space-y-1"><label className="text-[8px] font-black uppercase tracking-widest text-gray-400 ml-1">State</label><input type="text" placeholder="FL" className="w-full bg-gray-50 border border-transparent rounded-xl py-3.5 px-5 font-bold text-sm outline-none focus:bg-white" /></div>
+                 </div>
+              </div>
+              <button onClick={() => onComplete({ ...formData, specialization })} className="w-full bg-[#ff385c] text-white py-4 md:py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] md:text-[11px] hover:bg-[#e31c5f] transition-all shadow-2xl active:scale-95">Complete Terminal Setup</button>
+            </div>
+          )}
         </div>
-
-        <p className="text-center text-xs text-white/25 mt-6">
-          You can update all of this from your dashboard at any time.
-        </p>
       </div>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────
-// DASHBOARD VIEW
-// ─────────────────────────────────────────────
-
-function DashboardView({
-  company,
-  availableLeads,
-  onNavigate,
-}: {
-  company: SerializedCompany;
-  availableLeads: SerializedAvailableLead[];
-  onNavigate: (view: View) => void;
-}) {
-  const hasPayment = !!company.stripeCustomerId;
-  const profileFields = [company.name, company.phone, company.email, company.address, company.website];
-  const filledFields = profileFields.filter(Boolean).length;
-  const profilePct = Math.round((filledFields / profileFields.length) * 100);
-
+function DashboardView({ leads, purchasedLeads, setActiveTab, onOpenLead }: { leads: Lead[]; purchasedLeads: PurchasedLead[]; setActiveTab: (tab: string) => void; onOpenLead: (lead: Lead | PurchasedLead) => void }) {
+  const lifetimeSpent = purchasedLeads.reduce((acc, l) => acc + l.price, 0);
   return (
-    <div className="space-y-6 cda-fade-up">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-2xl font-bold tracking-tight-custom text-white">{company.name}</h1>
-            <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
-              company.status === "ACTIVE" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" :
-              company.status === "PENDING" ? "bg-amber-500/15 text-amber-400 border-amber-500/25" :
-              "bg-white/8 text-white/40 border-white/10"
-            }`}>
-              {company.status}
-            </span>
+    <div className="space-y-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[
+          { icon: Zap, label: 'Available Leads', value: leads.length, color: 'text-[#ff385c]' },
+          { icon: TrendingUp, label: 'Lifetime Spent', value: `$${lifetimeSpent}.00` },
+          { icon: CheckCircle2, label: 'Purchased Leads', value: purchasedLeads.length }
+        ].map((stat, i) => (
+          <div key={i} className="bg-white border border-gray-200 p-5 rounded-[1.75rem] relative overflow-hidden group shadow-sm">
+            <div className="flex items-center gap-2 mb-3 relative z-10"><stat.icon size={14} className="text-gray-400" /><span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400">{stat.label}</span></div>
+            <div className={`text-3xl font-black mb-1 tracking-tighter-custom relative z-10 ${stat.color || 'text-black'}`}>{String(stat.value)}</div>
+            <div className="absolute -right-4 -bottom-4 text-black opacity-[0.02] group-hover:scale-110 transition-transform duration-700"><stat.icon size={80} /></div>
           </div>
-          <p className="text-white/40 text-sm mt-1 flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5" />
-            {company.cityName}, {company.stateAbbr}
-            {company.services.length > 0 && (
-              <> · {company.services.length} service{company.services.length !== 1 ? "s" : ""}</>
-            )}
-          </p>
-        </div>
-        <button
-          onClick={() => onNavigate("leads")}
-          className="coral-btn shrink-0"
-        >
-          <Inbox className="h-4 w-4" /> View Leads
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
-          label="Available Leads"
-          value={String(availableLeads.length)}
-          sub="in your area"
-          icon={<Inbox className="h-4 w-4" />}
-          accent={availableLeads.length > 0}
-        />
-        <StatCard
-          label="Total Spend"
-          value={`$${company.totalSpend.toFixed(2)}`}
-          sub={`${company.billingHistory.length} leads unlocked`}
-          icon={<DollarSign className="h-4 w-4" />}
-        />
-        <StatCard
-          label="Avg. Rating"
-          value={company.averageRating ? Number(company.averageRating).toFixed(1) : "—"}
-          sub={`${company.reviewCount} review${company.reviewCount !== 1 ? "s" : ""}`}
-          icon={<Star className="h-4 w-4" />}
-        />
-      </div>
-
-      {/* Setup cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Payment */}
-        <GlassCard className="flex items-center gap-4">
-          <div className={`p-3 rounded-xl ${hasPayment ? "bg-emerald-500/20" : "bg-[#ff385c]/15"}`}>
-            <CreditCard className={`h-5 w-5 ${hasPayment ? "text-emerald-400" : "text-[#ff385c]"}`} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-white font-semibold text-sm">Payment Method</p>
-            <p className="text-white/40 text-xs mt-0.5 truncate">
-              {hasPayment ? "Card on file — ready to unlock" : "Add a card to unlock leads"}
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigate("billing")}
-            className="text-[#ff385c] text-xs font-semibold hover:underline flex items-center gap-0.5 shrink-0"
-          >
-            {hasPayment ? "Manage" : "Add"} <ArrowRight className="h-3 w-3" />
-          </button>
-        </GlassCard>
-
-        {/* Profile */}
-        <GlassCard className="flex items-center gap-4">
-          <div className={`p-3 rounded-xl ${profilePct === 100 ? "bg-emerald-500/20" : "bg-blue-500/15"}`}>
-            <User className={`h-5 w-5 ${profilePct === 100 ? "text-emerald-400" : "text-blue-400"}`} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-white font-semibold text-sm">Business Profile</p>
-            <div className="flex items-center gap-2 mt-1.5">
-              <div className="flex-1 h-1.5 bg-white/8 rounded-full overflow-hidden">
-                <div className="h-full bg-[#ff385c] rounded-full transition-all" style={{ width: `${profilePct}%` }} />
-              </div>
-              <span className="text-white/40 text-xs font-semibold">{profilePct}%</span>
-            </div>
-          </div>
-          <button
-            onClick={() => onNavigate("profile")}
-            className="text-[#ff385c] text-xs font-semibold hover:underline flex items-center gap-0.5 shrink-0"
-          >
-            Edit <ArrowRight className="h-3 w-3" />
-          </button>
-        </GlassCard>
-      </div>
-
-      {/* Lead Inbox Preview */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-white font-bold text-lg tracking-tight-custom">Lead Inbox</h2>
-            <p className="text-white/40 text-sm mt-0.5">Customers requesting quotes in your area</p>
-          </div>
-          <button
-            onClick={() => onNavigate("leads")}
-            className="text-[#ff385c] text-sm font-semibold hover:underline flex items-center gap-1"
-          >
-            View all <ArrowRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-
-        {availableLeads.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {availableLeads.slice(0, 4).map((lead) => (
-              <div key={lead.id} className="tactical-glass rounded-2xl p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#ff385c]/15 flex items-center justify-center shrink-0">
-                  {lead.vehicleType === "BOAT" ? <span className="text-lg">⛵</span> : <Car className="h-5 w-5 text-[#ff385c]" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-semibold truncate">{lead.customerName} · {lead.serviceName}</p>
-                  <p className="text-white/40 text-xs truncate">{lead.cityName}, {lead.stateAbbr}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-[#ff385c] font-bold text-sm">${lead.leadPrice.toFixed(0)}</p>
-                  <button
-                    onClick={() => onNavigate("leads")}
-                    className="text-white/30 text-xs hover:text-white/60 transition-colors"
-                  >
-                    Unlock
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <GlassCard className="text-center py-12">
-            <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="h-6 w-6 text-white/20" />
-            </div>
-            <h3 className="text-white font-semibold mb-2">No leads yet</h3>
-            <p className="text-white/40 text-sm max-w-xs mx-auto">
-              When a customer in your area requests a quote, you&apos;ll see it here.
-            </p>
-          </GlassCard>
-        )}
-      </div>
-
-      {/* No payment CTA */}
-      {!hasPayment && (
-        <div className="flex items-start gap-4 p-5 rounded-2xl bg-gradient-to-r from-[#ff385c]/15 to-[#ff385c]/5 border border-[#ff385c]/20">
-          <Zap className="h-5 w-5 text-[#ff385c] shrink-0 mt-0.5" />
-          <div>
-            <p className="text-white font-semibold text-sm">Add a payment method to start unlocking leads</p>
-            <p className="text-white/50 text-xs mt-0.5">
-              You&apos;re only charged when you unlock a contact. No monthly fees.{" "}
-              <button onClick={() => onNavigate("billing")} className="text-[#ff385c] underline font-semibold">
-                Set up billing →
-              </button>
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// LEADS VIEW
-// ─────────────────────────────────────────────
-
-function LeadsView({
-  availableLeads: initialAvailable,
-  purchasedLeads,
-  hasPayment,
-}: {
-  availableLeads: SerializedAvailableLead[];
-  purchasedLeads: SerializedPurchasedLead[];
-  hasPayment: boolean;
-}) {
-  const [tab, setTab] = useState<"available" | "purchased">("available");
-  const [selectedLead, setSelectedLead] = useState<SerializedAvailableLead | null>(null);
-  const [available, setAvailable] = useState(initialAvailable);
-  const [purchased, setPurchased] = useState(purchasedLeads);
-
-  const handleUnlocked = useCallback(
-    (leadId: string, contact: { name: string; email: string; phone: string }) => {
-      const lead = available.find((l) => l.id === leadId);
-      if (!lead) return;
-
-      const newPurchased: SerializedPurchasedLead = {
-        id: lead.id,
-        purchaseId: `purchase_${leadId}`,
-        vehicleType: lead.vehicleType,
-        customerName: contact.name,
-        customerEmail: contact.email,
-        customerPhone: contact.phone,
-        serviceName: lead.serviceName,
-        cityName: lead.cityName,
-        stateAbbr: lead.stateAbbr,
-        leadPrice: lead.leadPrice,
-        amountCharged: lead.leadPrice,
-        boatSize: lead.boatSize,
-        boatType: lead.boatType,
-        boatMake: lead.boatMake,
-        boatYear: lead.boatYear,
-        notes: lead.notes,
-        createdAt: lead.createdAt,
-      };
-
-      setAvailable((prev) => prev.filter((l) => l.id !== leadId));
-      setPurchased((prev) => [newPurchased, ...prev]);
-      setSelectedLead(null);
-      setTab("purchased");
-    },
-    [available]
-  );
-
-  return (
-    <div className="space-y-5 cda-fade-up">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight-custom text-white">Lead Inbox</h1>
-        <p className="text-white/40 text-sm mt-0.5">Purchase leads to unlock customer contact information.</p>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/8 w-fit">
-        {(["available", "purchased"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              tab === t
-                ? "bg-[#ff385c] text-white shadow-lg shadow-[#ff385c]/20"
-                : "text-white/40 hover:text-white/70"
-            }`}
-          >
-            {t === "available" ? `Available (${available.length})` : `Purchased (${purchased.length})`}
-          </button>
         ))}
       </div>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-[12px] font-black tracking-tight uppercase text-gray-400">High Priority Opportunities</h2>
+          <button onClick={() => setActiveTab('leads')} className="text-[#ff385c] text-[9px] font-black uppercase tracking-widest hover:underline">View All Leads</button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {leads.slice(0, 4).map(lead => <LeadTile key={lead.id} lead={lead} onOpen={onOpenLead} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-      {tab === "available" && (
-        <>
-          {available.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {available.map((lead) => (
-                <AvailableLeadCard key={lead.id} lead={lead} onSelect={setSelectedLead} />
-              ))}
+function LeadsView({ leads, purchasedLeads, onOpenLead }: { leads: Lead[]; purchasedLeads: PurchasedLead[]; onOpenLead: (lead: Lead | PurchasedLead) => void }) {
+  const [subTab, setSubTab] = useState('available');
+  const displayLeads = subTab === 'available' ? leads : purchasedLeads;
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex bg-gray-200/50 p-1 rounded-xl w-fit shadow-inner">
+          <button onClick={() => setSubTab('available')} className={`px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'available' ? 'bg-white shadow-sm text-black' : 'text-gray-400 hover:text-gray-600'}`}>Available ({leads.length})</button>
+          <button onClick={() => setSubTab('purchased')} className={`px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'purchased' ? 'bg-white shadow-sm text-black' : 'text-gray-400 hover:text-gray-600'}`}>Purchased ({purchasedLeads.length})</button>
+        </div>
+        <div className="relative"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={12} /><input type="text" placeholder="Search leads..." className="bg-white border border-gray-200 rounded-xl py-1.5 pl-8 pr-4 text-[11px] font-medium outline-none focus:border-[#ff385c] transition-all w-48 shadow-sm" /></div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 pb-12">
+        {displayLeads.length > 0 ? displayLeads.map(lead => <LeadTile key={lead.id} lead={lead} purchased={subTab === 'purchased'} onOpen={onOpenLead} />) : <div className="col-span-full py-32 text-center bg-white border border-dashed border-gray-200 rounded-[2rem]"><Inbox size={32} className="mx-auto text-gray-200 mb-4" /><h4 className="font-bold text-black text-[12px] uppercase">Console Empty</h4><p className="text-[10px] text-gray-400">Waiting for new {subTab} deployments.</p></div>}
+      </div>
+    </div>
+  );
+}
+
+function ProfileView({ profile, setProfile, toggleService }: { profile: ProfileData; setProfile: React.Dispatch<React.SetStateAction<ProfileData>>; toggleService: (s: string) => void }) {
+  const [customServiceName, setCustomServiceName] = useState('');
+  const SERVICES = profile.specialization === 'boat' ? MARINE_SERVICES : AUTO_SERVICES;
+  const allAvailableDisplayServices = Array.from(new Set([...SERVICES, ...profile.services]));
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setProfile(prev => ({ ...prev, [name]: name === 'radius' ? parseInt(value) : value }));
+  };
+
+  const handleAddCustomService = (e: React.KeyboardEvent | React.MouseEvent) => {
+    if (('key' in e && e.key === 'Enter') || e.type === 'click') {
+      if (customServiceName.trim() && !profile.services.includes(customServiceName.trim())) {
+        setProfile(prev => ({ ...prev, services: [...prev.services, customServiceName.trim()] }));
+        setCustomServiceName('');
+      }
+    }
+  };
+
+  return (
+    <div className="max-w-4xl space-y-6">
+      <div className="bg-white border border-gray-200 rounded-[2rem] p-7 shadow-sm space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {[
+            { label: 'Company Name', icon: Building2, name: 'name', value: profile.name },
+            { label: 'Website', icon: Globe, name: 'website', value: profile.website },
+            { label: 'Home Base', icon: MapPin, name: 'address', value: profile.address },
+            { label: 'Service Area', icon: Navigation, name: 'serviceArea', value: profile.serviceArea },
+            { label: 'Phone', icon: Phone, name: 'phone', value: profile.phone },
+            { label: 'Email', icon: Mail, name: 'email', value: profile.email },
+          ].map((field, i) => (
+            <div key={i} className="space-y-1.5">
+              <label className="text-[8px] font-bold uppercase tracking-[0.15em] text-gray-400 ml-1">{field.label}</label>
+              <div className="relative group"><field.icon size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#ff385c] transition-colors" /><input type="text" name={field.name} value={String(field.value || '')} onChange={handleInputChange} className="w-full bg-gray-50 border border-transparent rounded-xl py-2.5 pl-10 pr-4 font-bold text-[12px] outline-none focus:bg-white focus:border-[#ff385c] transition-all text-black" /></div>
             </div>
-          ) : (
-            <GlassCard className="text-center py-14">
-              <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <Inbox className="h-6 w-6 text-white/20" />
-              </div>
-              <h3 className="text-white font-semibold mb-2">No available leads</h3>
-              <p className="text-white/35 text-sm">Check back soon — new leads come in daily.</p>
-            </GlassCard>
-          )}
-        </>
-      )}
+          ))}
+          <div className="space-y-1 md:col-span-2 bg-gray-50 p-5 rounded-2xl border border-gray-100 mt-2">
+            <div className="flex justify-between items-center mb-3"><label className="text-[8px] font-black uppercase tracking-widest text-gray-400 block">Dispatch Radius</label><div className="text-lg font-black text-[#ff385c] tracking-tighter px-3 py-0.5 bg-white rounded-lg shadow-sm">{profile.radius} mi</div></div>
+            <input type="range" min="5" max="150" step="5" name="radius" value={profile.radius || 35} onChange={handleInputChange} className="w-full" />
+          </div>
+        </div>
+        <div className="pt-6 border-t border-gray-100">
+          <div className="flex items-center justify-between mb-6"><h3 className="text-[12px] font-black uppercase text-black tracking-wider">Select Your Services</h3><div className="relative"><input type="text" placeholder="Add custom service..." value={customServiceName || ''} onChange={(e) => setCustomServiceName(e.target.value)} onKeyDown={handleAddCustomService} className="bg-gray-100 border border-gray-200 rounded-xl py-2 pl-3 pr-10 text-[10px] font-bold outline-none focus:bg-white focus:border-black transition-all w-48 shadow-sm" /><button onClick={handleAddCustomService} className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 bg-black text-white rounded-lg hover:scale-105 transition-transform shadow-lg"><Plus size={14} /></button></div></div>
+          <div className="flex flex-wrap gap-1.5">{allAvailableDisplayServices.map(s => { const isCustom = !SERVICES.includes(s); const isActive = profile.services.includes(s); return (<button key={s} onClick={() => toggleService(s)} className={`px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest border transition-all duration-300 flex items-center gap-1.5 ${isActive ? 'bg-[#ff385c] border-[#ff385c] text-white shadow-md' : 'bg-white border-gray-200 text-gray-400 hover:border-black'}`}>{isActive && <Check size={10} />}{s}{isCustom && isActive && <X size={10} className="ml-1 opacity-60" onClick={(e) => { e.stopPropagation(); toggleService(s); }} />}</button>); })}</div>
+        </div>
+        <div className="pt-6 border-t border-gray-100 flex justify-between items-center"><div className="flex items-center gap-2 text-emerald-500"><CheckCircle2 size={14} /><span className="text-[9px] font-black uppercase tracking-[0.2em]">Active Profile</span></div><button className="bg-[#ff385c] text-white px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:bg-[#e31c5f] transition-all shadow-lg shadow-[#ff385c]/20 active:scale-95">Save Changes</button></div>
+      </div>
+    </div>
+  );
+}
 
-      {tab === "purchased" && (
-        <>
-          {purchased.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {purchased.map((lead) => (
-                <PurchasedLeadCard key={lead.purchaseId} lead={lead} />
-              ))}
+function BillingView({ purchasedLeads, onOpenReceipt, paymentMethod, setPaymentMethod }: { purchasedLeads: PurchasedLead[]; onOpenReceipt: (lead: PurchasedLead) => void; paymentMethod: { number: string; expiry: string } | null; setPaymentMethod: (pm: { number: string; expiry: string } | null) => void }) {
+  const totalSpent = purchasedLeads.reduce((acc, l) => acc + l.price, 0);
+  return (
+    <div className="space-y-4 md:space-y-6 relative">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white border border-gray-200 p-6 md:p-8 rounded-[2rem] relative overflow-hidden group shadow-sm flex flex-col justify-between min-h-[200px]">
+          {paymentMethod ? (
+             <div className="space-y-5 md:space-y-6 relative z-10">
+                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Payment Link</span>
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-6 md:w-12 md:h-8 bg-zinc-900 rounded border border-white/10 flex items-center justify-center italic text-white text-[7px] md:text-[8px] font-black">VISA</div>
+                  <div>
+                    <div className="text-sm md:text-base font-bold text-black tracking-tight">•••• •••• •••• {paymentMethod.number}</div>
+                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Active • Expires {paymentMethod.expiry}</div>
+                  </div>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <button className="bg-black text-white px-5 md:px-6 py-2 rounded-xl font-bold uppercase tracking-widest text-[9px] hover:bg-zinc-800 transition-all shadow-lg">Change</button>
+                  <button onClick={() => setPaymentMethod(null)} className="bg-gray-100 text-gray-600 px-5 md:px-6 py-2 rounded-xl font-bold uppercase tracking-widest text-[9px] hover:bg-gray-200 transition-all">Remove</button>
+                </div>
+             </div>
+          ) : (
+             <div className="flex flex-col items-center justify-center h-full space-y-4 relative z-10 text-center py-4">
+                <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-300"><CardIcon size={24} /></div>
+                <h4 className="font-bold text-black uppercase text-[10px] tracking-widest">No Card Linked</h4>
+                <button className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-[9px] hover:bg-blue-700 shadow-lg">Add Secure Method</button>
+             </div>
+          )}
+        </div>
+        <div className="bg-white border border-gray-200 p-6 md:p-8 rounded-[2rem] relative overflow-hidden group shadow-sm">
+          <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Total Investment</span>
+          <div className="text-5xl md:text-6xl font-black mb-1 tracking-tighter text-black relative z-10 leading-none mt-4">${totalSpent}.00</div>
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2 leading-none">Lifetime Acquisition Spend</div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 shadow-sm">
+        <h3 className="text-base md:text-lg font-black tracking-tight text-black uppercase flex items-center gap-2 mb-6 md:mb-8 leading-none"><Receipt size={18} className="text-gray-400" /> Transaction Log</h3>
+        <div className="space-y-2">
+          {purchasedLeads.length > 0 ? purchasedLeads.map((lead, i) => (
+            <div key={i} onClick={() => onOpenReceipt(lead)} className="flex items-center justify-between p-3.5 md:p-4 bg-gray-50/50 hover:bg-white hover:shadow-lg rounded-2xl border border-gray-100 transition-all cursor-pointer group">
+               <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
+                  <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl flex-shrink-0 flex items-center justify-center border bg-white border-gray-200 text-gray-400 group-hover:text-[#ff385c] transition-colors">{lead.type === 'boat' ? <Ship size={14} /> : <Car size={14} />}</div>
+                  <div className="overflow-hidden">
+                    <div className="text-[12px] md:text-[12.5px] font-bold text-black group-hover:text-[#ff385c] transition-colors truncate">{lead.title}</div>
+                    <div className="text-[9px] text-gray-400 font-bold uppercase mt-0.5 opacity-60 leading-none">{lead.purchasedAt}</div>
+                  </div>
+               </div>
+               <div className="text-right flex-shrink-0 ml-4">
+                  <div className="text-[13px] md:text-[14px] font-black text-black">-${lead.price}.00</div>
+                  <div className="text-[8px] text-emerald-600 font-black uppercase hidden md:block">••{paymentMethod?.number || '4242'}</div>
+               </div>
             </div>
-          ) : (
-            <GlassCard className="text-center py-14">
-              <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <Receipt className="h-6 w-6 text-white/20" />
-              </div>
-              <h3 className="text-white font-semibold mb-2">No purchased leads yet</h3>
-              <p className="text-white/35 text-sm">Unlock leads from the Available tab to see them here.</p>
-            </GlassCard>
+          )) : (
+            <div className="text-center py-16 opacity-40 uppercase font-black text-zinc-300 tracking-widest text-[10px]">Log Empty</div>
           )}
-        </>
-      )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-      {/* Lead detail panel */}
-      {selectedLead && (
+// --- Main App ---
+
+export default function CompanyApp() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [isOnboarded, setIsOnboarded] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<PurchasedLead | null>(null);
+  const [selectedLead, setSelectedLead] = useState<Lead | PurchasedLead | null>(null);
+
+  const [availableLeads, setAvailableLeads] = useState<Lead[]>(INITIAL_AVAILABLE);
+  const [purchasedLeads, setPurchasedLeads] = useState<PurchasedLead[]>(INITIAL_PURCHASED);
+  const [paymentMethod, setPaymentMethod] = useState<{ number: string; expiry: string } | null>({ number: '4242', expiry: '12/28' });
+
+  const [profile, setProfile] = useState<ProfileData>({
+    name: '', address: 'Saint Petersburg, FL', serviceArea: 'Tampa Bay', website: '', radius: 45, phone: '', email: 'admin@anchordetailing.com', specialization: 'boat', services: []
+  });
+
+  const filteredAvailableLeads = useMemo(() =>
+    availableLeads.filter(l => l.type === profile.specialization),
+    [availableLeads, profile.specialization]
+  );
+
+  const filteredPurchasedLeads = useMemo(() =>
+    purchasedLeads.filter(l => l.type === profile.specialization),
+    [purchasedLeads, profile.specialization]
+  );
+
+  const handlePurchaseLead = (leadId: number) => {
+    const leadToBuy = availableLeads.find(l => l.id === leadId);
+    if (!leadToBuy) return;
+    const enrichedLead: PurchasedLead = { ...leadToBuy, customerName: 'Marcus V.', phone: '(727) 555-0192', email: 'm.valdez@icloud.com', customerAddress: leadToBuy.location, purchasedAt: 'Just Now', servicesRequested: [leadToBuy.service, leadToBuy.subService] };
+    setPurchasedLeads([enrichedLead, ...purchasedLeads]);
+    setAvailableLeads(availableLeads.filter(l => l.id !== leadId));
+    setSelectedLead(enrichedLead);
+    setSelectedReceipt(enrichedLead);
+  };
+
+  const handleOnboardingComplete = (data: any) => {
+    setProfile(data);
+    setIsOnboarded(true);
+  };
+
+  const toggleService = (s: string) => setProfile(p => ({ ...p, services: p.services.includes(s) ? p.services.filter(x => x !== s) : [...p.services, s] }));
+
+  if (!isOnboarded) {
+    return (
+      <>
+        <TypographyStyle />
+        <OnboardingView onComplete={handleOnboardingComplete} />
+      </>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#F8F9FA] pb-20 md:pb-0">
+      <TypographyStyle />
+
+      {/* Sidebar - Desktop Only */}
+      <aside className="hidden md:flex w-56 bg-white border-r border-gray-200 flex-col p-5 fixed h-full z-30">
+        <div className="flex items-center gap-2 mb-10 px-1 group cursor-pointer">
+          <div className="bg-[#ff385c] p-1.5 rounded-xl text-white shadow-xl group-hover:scale-110 transition-transform duration-500"><Zap size={18} fill="currentColor" /></div>
+          <span className="text-base font-extrabold tracking-tighter uppercase italic text-black leading-none">DetailHub<span className="text-gray-300">Pro</span></span>
+        </div>
+        <nav className="space-y-1.5 flex-1">
+          <SidebarItem icon={LayoutDashboard} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+          <SidebarItem icon={Inbox} label="Lead Inbox" active={activeTab === 'leads'} onClick={() => setActiveTab('leads')} />
+          <SidebarItem icon={UserCircle} label="Business Profile" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
+          <SidebarItem icon={CreditCard} label="Billing & Payments" active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} />
+        </nav>
+        <div className="mt-auto pt-6 border-t border-gray-100">
+          <div className="bg-gray-50 rounded-2xl p-3.5 flex items-center gap-3 border border-gray-100 shadow-sm">
+            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center font-black text-black border border-gray-200 text-sm shadow-sm">A</div>
+            <div className="flex-1 overflow-hidden">
+              <div className="text-[12px] font-black tracking-tight truncate text-black uppercase">{String(profile.name && profile.name.split(' ')[0]) || 'Member'}</div>
+              <div className="text-[8px] text-gray-400 font-bold uppercase tracking-[0.2em] leading-none mt-1 flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />Active</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-xl border-t border-gray-200 flex items-center justify-around px-4 z-[350] shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+        <MobileNavItem icon={LayoutDashboard} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+        <MobileNavItem icon={Inbox} label="Lead Inbox" active={activeTab === 'leads'} onClick={() => setActiveTab('leads')} />
+        <MobileNavItem icon={UserCircle} label="Business Profile" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
+        <MobileNavItem icon={CreditCard} label="Billing & Payments" active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} />
+      </nav>
+
+      {/* Mobile Sticky Header */}
+      <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#F8F9FA] z-[30] px-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="bg-[#ff385c] p-1 rounded-lg text-white shadow-lg"><Zap size={14} fill="currentColor" /></div>
+          <span className="font-extrabold uppercase italic text-black tracking-tighter text-xs">DetailHub</span>
+        </div>
+        <div className="w-7 h-7 rounded-full bg-black flex items-center justify-center text-[10px] text-white font-black">A</div>
+      </header>
+
+      <main className="flex-1 md:ml-56 p-4 md:p-12 mt-14 md:mt-0">
+        <header className="mb-6 md:mb-10">
+          <h1 className="text-xl md:text-2xl font-black tracking-tighter-custom text-black mb-0.5 uppercase">
+            {activeTab === 'dashboard' && 'Dashboard'}
+            {activeTab === 'leads' && 'Lead Inbox'}
+            {activeTab === 'profile' && 'Business Profile'}
+            {activeTab === 'billing' && 'Billing & Payments'}
+          </h1>
+          <p className="text-gray-400 font-bold text-[10px] md:text-[12px] tracking-tight max-w-2xl leading-relaxed uppercase opacity-60">
+            {activeTab === 'dashboard' && `Matched ${profile.specialization} territory intelligence.`}
+            {activeTab === 'leads' && `Active ${profile.specialization} request queue.`}
+            {activeTab === 'profile' && 'Configure terminal and dispatch radius.'}
+            {activeTab === 'billing' && 'Direct transaction history and payment links.'}
+          </p>
+        </header>
+
+        <div className="pb-12">
+          {activeTab === 'dashboard' && <DashboardView leads={filteredAvailableLeads} purchasedLeads={filteredPurchasedLeads} setActiveTab={setActiveTab} onOpenLead={setSelectedLead} />}
+          {activeTab === 'leads' && <LeadsView leads={filteredAvailableLeads} purchasedLeads={filteredPurchasedLeads} onOpenLead={setSelectedLead} />}
+          {activeTab === 'profile' && <ProfileView profile={profile} setProfile={setProfile} toggleService={toggleService} />}
+          {activeTab === 'billing' && (
+            <BillingView
+              purchasedLeads={filteredPurchasedLeads}
+              onOpenReceipt={setSelectedReceipt}
+              paymentMethod={paymentMethod}
+              setPaymentMethod={setPaymentMethod}
+            />
+          )}
+        </div>
+
         <LeadDetailPanel
           lead={selectedLead}
           onClose={() => setSelectedLead(null)}
-          onUnlocked={handleUnlocked}
-          hasPayment={hasPayment}
+          purchased={purchasedLeads.some(l => l.id === selectedLead?.id)}
+          onPurchase={handlePurchaseLead}
         />
-      )}
+
+        <ReceiptModal transaction={selectedReceipt} onClose={() => setSelectedReceipt(null)} />
+      </main>
     </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// PROFILE VIEW
-// ─────────────────────────────────────────────
-
-type ProfileFormData = {
-  name: string;
-  address: string;
-  phone: string;
-  email: string;
-  website: string;
-  description: string;
-  categories: string[];
-};
-
-const ALL_SERVICES = [
-  { label: "Full Detail (Boat)", value: "FULL_DETAIL", type: "boat" },
-  { label: "Hull Cleaning", value: "HULL_CLEANING", type: "boat" },
-  { label: "Wax & Polish", value: "WAXING_POLISHING", type: "boat" },
-  { label: "Teak Restoration", value: "TEAK_RESTORATION", type: "boat" },
-  { label: "Bottom Paint", value: "BOTTOM_PAINT", type: "boat" },
-  { label: "Interior Detail (Boat)", value: "INTERIOR_DETAIL", type: "boat" },
-  { label: "Canvas Cleaning", value: "CANVAS_CLEANING", type: "boat" },
-  { label: "Brightwork", value: "BRIGHTWORK", type: "boat" },
-  { label: "Full Detail (Car)", value: "CAR_FULL_DETAIL", type: "car" },
-  { label: "Interior Detail (Car)", value: "CAR_INTERIOR", type: "car" },
-  { label: "Exterior Wash", value: "CAR_EXTERIOR", type: "car" },
-  { label: "Paint Correction", value: "PAINT_CORRECTION", type: "car" },
-  { label: "Ceramic Coating", value: "CERAMIC_COATING", type: "car" },
-  { label: "Window Tint", value: "WINDOW_TINT", type: "car" },
-];
-
-function ProfileView({ company }: { company: SerializedCompany }) {
-  const [form, setForm] = useState<ProfileFormData>({
-    name: company.name,
-    address: company.address ?? "",
-    phone: company.phone ?? "",
-    email: company.email ?? "",
-    website: company.website ?? "",
-    description: company.description ?? "",
-    categories: company.services.map((s) => s.category),
-  });
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  function setF<K extends keyof ProfileFormData>(key: K, value: ProfileFormData[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }
-
-  function toggleCategory(cat: string) {
-    setForm((prev) => ({
-      ...prev,
-      categories: prev.categories.includes(cat)
-        ? prev.categories.filter((c) => c !== cat)
-        : [...prev.categories, cat],
-    }));
-  }
-
-  async function handleSave() {
-    setSaving(true);
-    setError(null);
-    setSaved(false);
-    try {
-      const res = await fetch("/api/company/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Failed to save profile");
-      }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div className="space-y-6 max-w-2xl cda-fade-up">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight-custom text-white">Business Profile</h1>
-        <p className="text-white/40 text-sm mt-0.5">
-          Changes appear on your public listing.
-          {company.slug && (
-            <> <Link href={`/companies/${company.slug}`} className="text-[#ff385c] hover:underline" target="_blank">View listing →</Link></>
-          )}
-        </p>
-      </div>
-
-      <GlassCard className="space-y-5">
-        <h2 className="text-white font-semibold text-sm uppercase tracking-wider text-white/40">Business Details</h2>
-
-        <div className="space-y-1.5">
-          <label className="text-white/50 text-xs font-semibold uppercase tracking-wider">Business Name</label>
-          <input className="glass-input" value={form.name} onChange={e => setF("name", e.target.value)} />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-white/50 text-xs font-semibold uppercase tracking-wider">Phone</label>
-            <input className="glass-input" type="tel" value={form.phone} onChange={e => setF("phone", e.target.value)} placeholder="(305) 555-0100" />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-white/50 text-xs font-semibold uppercase tracking-wider">Email</label>
-            <input className="glass-input" type="email" value={form.email} onChange={e => setF("email", e.target.value)} placeholder="hello@company.com" />
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-white/50 text-xs font-semibold uppercase tracking-wider">Website</label>
-          <input className="glass-input" type="url" value={form.website} onChange={e => setF("website", e.target.value)} placeholder="https://yourcompany.com" />
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-white/50 text-xs font-semibold uppercase tracking-wider">Street Address</label>
-          <input className="glass-input" value={form.address} onChange={e => setF("address", e.target.value)} placeholder="123 Marina Blvd" />
-        </div>
-
-        <div className="flex items-center gap-2 py-1 text-white/30 text-xs">
-          <MapPin className="h-3.5 w-3.5" />
-          <span>{company.cityName}, {company.stateAbbr} · City cannot be changed after setup</span>
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-white/50 text-xs font-semibold uppercase tracking-wider">Description</label>
-          <textarea
-            className="glass-input min-h-[90px] resize-none"
-            value={form.description}
-            onChange={e => setF("description", e.target.value)}
-            placeholder="Describe your business, experience, and specialties…"
-          />
-        </div>
-      </GlassCard>
-
-      <GlassCard className="space-y-4">
-        <h2 className="text-white/40 font-semibold text-xs uppercase tracking-wider">Services Offered</h2>
-
-        <div>
-          <p className="text-white/50 text-xs font-medium uppercase tracking-wider mb-2">⛵ Boat / Marine</p>
-          <div className="grid grid-cols-2 gap-2">
-            {ALL_SERVICES.filter(s => s.type === "boat").map(({ label, value }) => (
-              <GlassCheckbox
-                key={value}
-                checked={form.categories.includes(value)}
-                onChange={() => toggleCategory(value)}
-                label={label}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="pt-3 border-t border-white/8">
-          <p className="text-white/50 text-xs font-medium uppercase tracking-wider mb-2">🚗 Car / Truck</p>
-          <div className="grid grid-cols-2 gap-2">
-            {ALL_SERVICES.filter(s => s.type === "car").map(({ label, value }) => (
-              <GlassCheckbox
-                key={value}
-                checked={form.categories.includes(value)}
-                onChange={() => toggleCategory(value)}
-                label={label}
-              />
-            ))}
-          </div>
-        </div>
-      </GlassCard>
-
-      {error && (
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-          <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
-          <p className="text-red-300 text-sm">{error}</p>
-        </div>
-      )}
-
-      <div className="flex items-center gap-3">
-        <button className="coral-btn py-3 px-8" onClick={handleSave} disabled={saving}>
-          {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : <><Check className="h-4 w-4" /> Save Changes</>}
-        </button>
-        {saved && (
-          <span className="flex items-center gap-1.5 text-emerald-400 text-sm font-semibold cda-fade-in">
-            <CheckCircle2 className="h-4 w-4" /> Saved!
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// BILLING VIEW
-// ─────────────────────────────────────────────
-
-function BillingView({
-  company,
-  paymentMethod,
-}: {
-  company: SerializedCompany;
-  paymentMethod: PaymentMethodData | null;
-}) {
-  return (
-    <div className="space-y-6 max-w-2xl cda-fade-up">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight-custom text-white">Billing</h1>
-        <p className="text-white/40 text-sm mt-0.5">Manage your payment method and purchase history.</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <GlassCard>
-          <div className="flex items-center gap-2 text-white/40 text-xs font-semibold uppercase tracking-wider mb-2">
-            <DollarSign className="h-3.5 w-3.5" /> Credit Balance
-          </div>
-          <p className="text-3xl font-bold text-white tracking-tight-custom">
-            ${Number(company.leadCreditBalance).toFixed(2)}
-          </p>
-        </GlassCard>
-        <GlassCard>
-          <div className="flex items-center gap-2 text-white/40 text-xs font-semibold uppercase tracking-wider mb-2">
-            <TrendingUp className="h-3.5 w-3.5" /> Total Spent
-          </div>
-          <p className="text-3xl font-bold text-white tracking-tight-custom">
-            ${company.totalSpend.toFixed(2)}
-          </p>
-          <p className="text-white/30 text-xs mt-1">{company.billingHistory.length} leads unlocked</p>
-        </GlassCard>
-      </div>
-
-      {/* Payment Method */}
-      <GlassCard className="space-y-4">
-        <div className="flex items-center gap-2">
-          <CreditCard className="h-4 w-4 text-white/40" />
-          <h2 className="text-white/40 font-semibold text-xs uppercase tracking-wider">Payment Method</h2>
-        </div>
-
-        {paymentMethod ? (
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/8">
-            <div className="w-12 h-8 rounded-md bg-white/10 flex items-center justify-center text-white/60 text-xs font-bold uppercase">
-              {paymentMethod.brand.slice(0, 4)}
-            </div>
-            <div>
-              <p className="text-white font-semibold text-sm">•••• •••• •••• {paymentMethod.last4}</p>
-              <p className="text-white/40 text-xs mt-0.5">
-                Expires {String(paymentMethod.expMonth).padStart(2, "0")}/{paymentMethod.expYear}
-              </p>
-            </div>
-            <div className="ml-auto flex items-center gap-1.5 text-emerald-400 text-xs font-semibold">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Active
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 rounded-xl bg-amber-500/8 border border-amber-500/15">
-            <p className="text-amber-300 text-sm font-medium">No payment method on file</p>
-            <p className="text-amber-300/60 text-xs mt-0.5">Add a card below to start unlocking leads.</p>
-          </div>
-        )}
-
-        <div className="pt-2">
-          <p className="text-white/30 text-xs mb-4">{paymentMethod ? "Update your card:" : "Add a card:"}</p>
-          <PaymentMethodForm currentPaymentMethod={paymentMethod} />
-        </div>
-      </GlassCard>
-
-      {/* Purchase History */}
-      <GlassCard className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Receipt className="h-4 w-4 text-white/40" />
-          <h2 className="text-white/40 font-semibold text-xs uppercase tracking-wider">Purchase History</h2>
-        </div>
-
-        {company.billingHistory.length > 0 ? (
-          <div className="space-y-2">
-            {company.billingHistory.map((purchase) => (
-              <div
-                key={purchase.id}
-                className="flex items-center justify-between py-3 border-b border-white/6 last:border-0 text-sm"
-              >
-                <div>
-                  <p className="text-white font-medium">{purchase.serviceName} Lead</p>
-                  <p className="text-white/35 text-xs mt-0.5">
-                    {new Date(purchase.createdAt).toLocaleDateString("en-US", {
-                      month: "short", day: "numeric", year: "numeric",
-                    })}
-                    {purchase.isRefunded && (
-                      <span className="ml-2 text-red-400 font-semibold">Refunded</span>
-                    )}
-                    {purchase.stripePaymentIntentId && (
-                      <span className="ml-2 text-white/20">· {purchase.stripePaymentIntentId.slice(-8)}</span>
-                    )}
-                  </p>
-                </div>
-                <p className={`font-bold ${purchase.isRefunded ? "line-through text-white/30" : "text-white"}`}>
-                  ${purchase.amountCharged.toFixed(2)}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <Receipt className="h-8 w-8 text-white/15 mx-auto mb-3" />
-            <p className="text-white/30 text-sm">No purchases yet. Browse your lead inbox to get started.</p>
-          </div>
-        )}
-      </GlassCard>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// MAIN APP
-// ─────────────────────────────────────────────
-
-export default function CompanyApp({
-  company: initialCompany,
-  availableLeads,
-  purchasedLeads,
-  paymentMethod,
-}: AppProps) {
-  const router = useRouter();
-  const [view, setView] = useState<View>("dashboard");
-  const [company, setCompany] = useState(initialCompany);
-
-  function handleOnboardingComplete() {
-    router.refresh();
-  }
-
-  // Onboarding: no company yet
-  if (!company) {
-    return <OnboardingView onComplete={handleOnboardingComplete} />;
-  }
-
-  const hasPayment = !!company.stripeCustomerId;
-
-  return (
-    <>
-      <TypographyStyle />
-      <div className="flex min-h-screen bg-[#0a0a12] dark-scroll">
-        {/* ── Desktop Sidebar ── */}
-        <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-white/8 tactical-glass-solid min-h-screen">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 px-5 py-5 border-b border-white/8 hover:bg-white/4 transition-all">
-            <div className="w-8 h-8 rounded-lg bg-[#ff385c]/20 border border-[#ff385c]/25 flex items-center justify-center">
-              <Anchor className="h-4 w-4 text-[#ff385c]" />
-            </div>
-            <span className="text-white font-bold text-sm tracking-tight-custom">DetailHub</span>
-          </Link>
-
-          {/* Company info */}
-          <div className="px-4 py-4 border-b border-white/8">
-            <p className="text-white font-semibold text-sm truncate">{company.name}</p>
-            <p className="text-white/35 text-xs mt-0.5">{company.cityName}, {company.stateAbbr}</p>
-            <div className="flex items-center gap-1.5 mt-2">
-              <div className={`w-1.5 h-1.5 rounded-full ${company.status === "ACTIVE" ? "bg-emerald-400" : "bg-amber-400"}`} />
-              <span className="text-white/35 text-xs">{company.status}</span>
-            </div>
-          </div>
-
-          {/* Nav */}
-          <nav className="flex-1 p-3 space-y-1">
-            {NAV_ITEMS.map((item) => (
-              <SidebarItem key={item.id} item={item} active={view === item.id} onClick={() => setView(item.id)} />
-            ))}
-          </nav>
-
-          {/* Bottom */}
-          <div className="p-4 border-t border-white/8">
-            {hasPayment ? (
-              <div className="flex items-center gap-2 text-emerald-400 text-xs">
-                <Shield className="h-3.5 w-3.5" />
-                <span className="font-medium">Payment active</span>
-              </div>
-            ) : (
-              <button
-                onClick={() => setView("billing")}
-                className="w-full flex items-center gap-2 text-xs text-[#ff385c] font-semibold hover:underline"
-              >
-                <CreditCard className="h-3.5 w-3.5" />
-                <span>Add payment method</span>
-              </button>
-            )}
-          </div>
-        </aside>
-
-        {/* ── Main Content ── */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Mobile sticky header */}
-          <header className="md:hidden sticky top-0 z-30 tactical-glass-solid border-b border-white/8 px-4 py-3 flex items-center justify-between shrink-0">
-            <Link href="/" className="flex items-center gap-2">
-              <Anchor className="h-5 w-5 text-[#ff385c]" />
-              <span className="text-white font-bold text-sm tracking-tight-custom">DetailHub</span>
-            </Link>
-            <div>
-              <p className="text-white font-semibold text-xs">{company.name}</p>
-              <p className="text-white/35 text-xs">{company.cityName}, {company.stateAbbr}</p>
-            </div>
-          </header>
-
-          {/* Page content */}
-          <main className="flex-1 overflow-y-auto dark-scroll">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8">
-              {view === "dashboard" && (
-                <DashboardView
-                  company={company}
-                  availableLeads={availableLeads}
-                  onNavigate={setView}
-                />
-              )}
-              {view === "leads" && (
-                <LeadsView
-                  availableLeads={availableLeads}
-                  purchasedLeads={purchasedLeads}
-                  hasPayment={hasPayment}
-                />
-              )}
-              {view === "profile" && <ProfileView company={company} />}
-              {view === "billing" && (
-                <BillingView company={company} paymentMethod={paymentMethod} />
-              )}
-            </div>
-          </main>
-        </div>
-
-        {/* ── Mobile Bottom Nav ── */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 tactical-glass-solid border-t border-white/8 px-2 py-2 flex items-center justify-around">
-          {NAV_ITEMS.map((item) => (
-            <MobileNavItem key={item.id} item={item} active={view === item.id} onClick={() => setView(item.id)} />
-          ))}
-        </nav>
-      </div>
-    </>
   );
 }
