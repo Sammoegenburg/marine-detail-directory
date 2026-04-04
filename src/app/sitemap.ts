@@ -8,7 +8,7 @@ const BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://marine-detail-directory.vercel.app";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [states, cities, servicePages, companies] = await Promise.all([
+  const [states, cities, servicePages] = await Promise.all([
     prisma.state.findMany({
       select: { slug: true },
     }),
@@ -25,10 +25,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         city: { select: { slug: true, state: { select: { slug: true } } } },
         service: { select: { slug: true } },
       },
-    }),
-    prisma.company.findMany({
-      where: { status: "ACTIVE" },
-      select: { slug: true, updatedAt: true },
     }),
   ]);
 
@@ -61,13 +57,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.6,
     })),
-
-    // Company profiles: /companies/sea-bright-marine
-    ...companies.map((company) => ({
-      url: `${BASE_URL}/companies/${company.slug}`,
-      lastModified: company.updatedAt,
-      changeFrequency: "monthly" as const,
-      priority: 0.5,
-    })),
+    // Note: company profile URLs intentionally excluded (blind marketplace model)
   ];
 }

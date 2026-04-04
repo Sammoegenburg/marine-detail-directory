@@ -1,18 +1,23 @@
 // src/components/marketing/CompanyCard.tsx
-// Public company listing card — contact info intentionally hidden
+// Public company listing card — blind marketplace: no company identity exposed
 
-import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { ReviewStars } from "./ReviewStars";
-import { Shield, Calendar, ChevronRight } from "lucide-react";
+import { Shield, CheckCircle2, ChevronRight } from "lucide-react";
 import type { PublicCompany } from "@/types";
 
 type Props = {
   company: PublicCompany;
+  onRequestQuote?: () => void;
 };
 
-export function CompanyCard({ company }: Props) {
+export function CompanyCard({ company, onRequestQuote }: Props) {
+  const shortId = company.id.slice(-4).toUpperCase();
+  const label = company.isFeatured
+    ? `Top-Rated Detailer in ${company.city.name}`
+    : `Verified Marine Pro #${shortId}`;
+
   return (
     <div className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
       {/* Cover image */}
@@ -20,7 +25,7 @@ export function CompanyCard({ company }: Props) {
         {company.coverImageUrl ? (
           <Image
             src={company.coverImageUrl}
-            alt={company.name}
+            alt="Marine detailing professional"
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
@@ -34,22 +39,18 @@ export function CompanyCard({ company }: Props) {
             Featured
           </Badge>
         )}
+        <Badge className="absolute top-2 right-2 bg-green-600 hover:bg-green-600 text-white text-xs rounded-full px-2.5 flex items-center gap-1">
+          <CheckCircle2 className="h-3 w-3" /> Verified
+        </Badge>
       </div>
 
       <div className="p-4">
-        {/* Header */}
-        <div className="flex items-start gap-3 mb-3">
-          {company.logoUrl && (
-            <div className="relative h-10 w-10 rounded-full overflow-hidden border border-gray-100 bg-white shrink-0">
-              <Image src={company.logoUrl} alt="" fill className="object-contain" />
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-[#1d1d1f] tracking-tight truncate">{company.name}</h3>
-            <p className="text-xs text-gray-400 font-medium mt-0.5">
-              {company.city.name}, {company.city.state.name}
-            </p>
-          </div>
+        {/* Header — no company name, no logo */}
+        <div className="mb-3">
+          <h3 className="font-bold text-[#1d1d1f] tracking-tight">{label}</h3>
+          <p className="text-xs text-gray-400 font-medium mt-0.5">
+            {company.city.name}, {company.city.state.name}
+          </p>
         </div>
 
         {/* Rating */}
@@ -86,20 +87,21 @@ export function CompanyCard({ company }: Props) {
             </span>
           )}
           {company.yearEstablished && (
-            <span className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" /> Est. {company.yearEstablished}
+            <span className="flex items-center gap-1 text-gray-400">
+              Est. {company.yearEstablished}
             </span>
           )}
         </div>
 
-        {/* CTA */}
-        <Link
-          href={`/companies/${company.slug}`}
-          className="flex items-center justify-between w-full bg-black text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all group/btn"
+        {/* CTA — scrolls to / triggers quote form */}
+        <a
+          href="#quote-form"
+          onClick={onRequestQuote}
+          className="flex items-center justify-between w-full bg-[#ff385c] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#d90b34] transition-all group/btn shadow-sm shadow-red-500/20"
         >
           <span>Request a Quote</span>
           <ChevronRight className="h-4 w-4 group-hover/btn:translate-x-0.5 transition-transform" />
-        </Link>
+        </a>
       </div>
     </div>
   );

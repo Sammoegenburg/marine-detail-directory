@@ -159,6 +159,26 @@ export default async function CityHubPage({ params }: Props) {
           )}
         </section>
 
+        {/* Lead-first hero CTA */}
+        <section className="px-6 pb-8 max-w-[1400px] mx-auto">
+          <FadeUp>
+            <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] p-8 md:p-12 shadow-lg border border-gray-100 text-center">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#1d1d1f] mb-4">
+                Get Free Quotes from Verified Pros
+              </h2>
+              <p className="text-gray-500 text-lg mb-6">
+                Tell us about your boat and we&apos;ll connect you with top-rated marine detailers in {city.name}.
+              </p>
+              <a
+                href="#quote-form"
+                className="inline-block bg-[#ff385c] text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-[#d90b34] transition-all shadow-lg shadow-red-500/30"
+              >
+                Get My Free Quotes →
+              </a>
+            </div>
+          </FadeUp>
+        </section>
+
         {/* Two-column layout */}
         <section className="px-6 pb-20 max-w-[1400px] mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -166,7 +186,7 @@ export default async function CityHubPage({ params }: Props) {
             <div className="lg:col-span-2">
               <FadeUp>
                 <h2 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mb-6">
-                  Detailers in {city.name} ({publicCompanies.length})
+                  Verified Pros in {city.name} ({publicCompanies.length})
                 </h2>
               </FadeUp>
 
@@ -186,7 +206,7 @@ export default async function CityHubPage({ params }: Props) {
             </div>
 
             {/* Glassmorphic sticky form */}
-            <aside>
+            <aside id="quote-form">
               <div className="sticky top-24 rounded-2xl bg-white/80 backdrop-blur-xl border border-gray-100 p-6 shadow-sm">
                 <h3 className="font-bold text-[#1d1d1f] tracking-tight text-lg mb-1">Get a Free Quote</h3>
                 <p className="text-sm text-gray-500 mb-4 font-medium">

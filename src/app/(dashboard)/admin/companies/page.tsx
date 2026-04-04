@@ -1,12 +1,13 @@
 // src/app/(dashboard)/admin/companies/page.tsx
-// Company management — searchable master table
+// Company management — searchable master table with full contact data
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Search } from "lucide-react";
+import { Search, ExternalLink } from "lucide-react";
+import { VerifyButton } from "@/components/dashboard/VerifyButton";
+import { FeatureButton } from "@/components/dashboard/FeatureButton";
 
 type Props = {
   searchParams: Promise<{ q?: string }>;
@@ -70,15 +71,19 @@ export default async function AdminCompaniesPage({ searchParams }: Props) {
               <tr className="border-b bg-slate-50">
                 <th className="text-left px-4 py-3 font-semibold text-slate-700">Company</th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-700">City / State</th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700">Phone</th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700">Email</th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700">Website</th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-700">Status</th>
-                <th className="text-right px-4 py-3 font-semibold text-slate-700">Leads Purchased</th>
-                <th className="text-right px-4 py-3 font-semibold text-slate-700">Created</th>
+                <th className="text-right px-4 py-3 font-semibold text-slate-700">Rating</th>
+                <th className="text-right px-4 py-3 font-semibold text-slate-700">Leads</th>
+                <th className="text-right px-4 py-3 font-semibold text-slate-700">Actions</th>
               </tr>
             </thead>
             <tbody>
               {companies.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-12 text-slate-400">
+                  <td colSpan={9} className="text-center py-12 text-slate-400">
                     No companies found{query ? ` matching "${query}"` : ""}.
                   </td>
                 </tr>
@@ -86,16 +91,48 @@ export default async function AdminCompaniesPage({ searchParams }: Props) {
                 companies.map((company) => (
                   <tr key={company.id} className="border-b last:border-0 hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3">
-                      <Link
-                        href={`/companies/${company.slug}`}
-                        className="font-medium text-blue-700 hover:underline"
-                        target="_blank"
-                      >
-                        {company.name}
-                      </Link>
+                      <p className="font-medium text-slate-900">{company.name}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {company.isFeatured && (
+                          <span className="text-amber-600 font-semibold">★ Featured · </span>
+                        )}
+                        Created {new Date(company.createdAt).toLocaleDateString()}
+                      </p>
                     </td>
                     <td className="px-4 py-3 text-slate-600">
                       {company.city.name}, {company.city.state.abbreviation}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {company.phone ? (
+                        <a href={`tel:${company.phone}`} className="hover:underline">
+                          {company.phone}
+                        </a>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {company.email ? (
+                        <a href={`mailto:${company.email}`} className="hover:underline text-blue-700 text-xs">
+                          {company.email}
+                        </a>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {company.website ? (
+                        <a
+                          href={company.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-blue-700 hover:underline text-xs"
+                        >
+                          Visit <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <Badge
@@ -106,10 +143,24 @@ export default async function AdminCompaniesPage({ searchParams }: Props) {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right text-slate-700 font-medium">
+                      {company.averageRating
+                        ? `${Number(company.averageRating).toFixed(1)} (${company.reviewCount})`
+                        : <span className="text-slate-300">—</span>
+                      }
+                    </td>
+                    <td className="px-4 py-3 text-right text-slate-700 font-medium">
                       {company._count.leadPurchases}
                     </td>
-                    <td className="px-4 py-3 text-right text-slate-400">
-                      {new Date(company.createdAt).toLocaleDateString()}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-2">
+                        {company.status !== "ACTIVE" && (
+                          <VerifyButton companyId={company.id} />
+                        )}
+                        <FeatureButton
+                          companyId={company.id}
+                          isFeatured={company.isFeatured}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))

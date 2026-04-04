@@ -57,6 +57,8 @@ export default async function AdminLeadsPage() {
             <thead>
               <tr className="border-b bg-slate-50">
                 <th className="text-left px-4 py-3 font-semibold text-slate-700">Customer</th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700">Email</th>
+                <th className="text-left px-4 py-3 font-semibold text-slate-700">Phone</th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-700">Service</th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-700">Location</th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-700">Boat</th>
@@ -68,7 +70,7 @@ export default async function AdminLeadsPage() {
             <tbody>
               {leads.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-slate-400">
+                  <td colSpan={9} className="text-center py-12 text-slate-400">
                     No leads yet.
                   </td>
                 </tr>
@@ -78,6 +80,16 @@ export default async function AdminLeadsPage() {
                     <td className="px-4 py-3">
                       <p className="font-medium text-slate-800">{lead.customerName}</p>
                       <p className="text-slate-400 text-xs">{lead.zipCode}</p>
+                    </td>
+                    <td className="px-4 py-3 text-slate-700 text-xs">
+                      <a href={`mailto:${lead.customerEmail}`} className="hover:underline text-blue-700">
+                        {lead.customerEmail}
+                      </a>
+                    </td>
+                    <td className="px-4 py-3 text-slate-700 text-xs">
+                      <a href={`tel:${lead.customerPhone}`} className="hover:underline">
+                        {lead.customerPhone}
+                      </a>
                     </td>
                     <td className="px-4 py-3 text-slate-700">{lead.service.name}</td>
                     <td className="px-4 py-3 text-slate-600">
