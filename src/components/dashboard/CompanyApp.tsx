@@ -52,6 +52,43 @@ interface Lead {
   purchasedAt?: string;
 }
 
+// Maps raw API lead to the Lead display type
+function mapApiLead(raw: any, isPurchased = false): Lead {
+  const vehicleType = raw.vehicleType === 'CAR' ? 'car' : 'boat';
+  const sizeMap: Record<string, string> = {
+    UNDER_20FT: '<20ft',
+    TWENTY_TO_30FT: '20-30ft',
+    THIRTY_TO_40FT: '30-40ft',
+    OVER_40FT: '>40ft',
+  };
+  const specParts: string[] = [];
+  if (raw.boatSize) specParts.push(sizeMap[raw.boatSize] || raw.boatSize);
+  if (raw.boatMake) specParts.push(raw.boatMake);
+  else if (raw.boatType) specParts.push(raw.boatType);
+
+  const titleParts: string[] = [raw.serviceName];
+  if (raw.boatYear) titleParts.push(String(raw.boatYear));
+  if (raw.boatMake) titleParts.push(raw.boatMake);
+  else if (raw.boatType) titleParts.push(raw.boatType);
+
+  return {
+    id: raw.id,
+    type: vehicleType,
+    title: titleParts.join(' '),
+    service: raw.serviceName,
+    subService: raw.notes ? String(raw.notes).slice(0, 80) : 'No additional notes',
+    location: `${raw.cityName}, ${raw.stateAbbr}`,
+    price: raw.leadPrice,
+    specs: specParts.join(' · ') || (vehicleType === 'car' ? 'Automobile' : 'Vessel'),
+    customerName: isPurchased ? raw.customerName : undefined,
+    phone: isPurchased ? raw.customerPhone : undefined,
+    email: isPurchased ? raw.customerEmail : undefined,
+    purchasedAt: isPurchased && raw.purchasedAt
+      ? new Date(raw.purchasedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : undefined,
+  };
+}
+
 // --- Sub-components ---
 function SidebarItem({ icon: Icon, label, active, onClick }: { icon: any; label: string; active: boolean; onClick: () => void }) {
   return (
@@ -103,7 +140,9 @@ function LeadTile({ lead, purchased = false, onOpen }: { lead: Lead; purchased?:
   );
 }
 
-function LeadDetailPanel({ lead, onClose, purchased, onPurchase }: { lead: Lead | null; onClose: () => void; purchased: boolean; onPurchase: (id: string) => void }) {
+type ContactInfo = { customerName: string; customerPhone: string; customerEmail: string };
+
+function LeadDetailPanel({ lead, onClose, purchased, onPurchase }: { lead: Lead | null; onClose: () => void; purchased: boolean; onPurchase: (id: string, contactInfo: ContactInfo) => void }) {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [error, setError] = useState('');
   if (!lead) return null;
@@ -115,7 +154,11 @@ function LeadDetailPanel({ lead, onClose, purchased, onPurchase }: { lead: Lead 
       const res = await fetch(`/api/leads/${lead.id}/unlock`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to unlock lead');
-      onPurchase(lead.id);
+      onPurchase(lead.id, {
+        customerName: data.customerName,
+        customerPhone: data.customerPhone,
+        customerEmail: data.customerEmail,
+      });
     } catch (err: any) {
       setError(err.message || 'Payment failed');
     } finally {
@@ -298,7 +341,7 @@ function OnboardingView({ onComplete }: { onComplete: (data: any) => void }) {
 }
 
 // --- Dashboard View ---
-function DashboardView({ leads, purchasedLeads, setActiveTab, onOpenLead }: { leads: Lead[]; purchasedLeads: Lead[]; setActiveTab: (t: string) => void; onOpenLead: (l: Lead) => void }) {
+function DashboardView({ leads, purchasedLeads, setActiveTab, onOpenLead, leadsLoading }: { leads: Lead[]; purchasedLeads: Lead[]; setActiveTab: (t: string) => void; onOpenLead: (l: Lead) => void; leadsLoading?: boolean }) {
   const lifetimeSpent = purchasedLeads.reduce((acc, l) => acc + l.price, 0);
   return (
     <div className="space-y-10">
@@ -314,7 +357,12 @@ function DashboardView({ leads, purchasedLeads, setActiveTab, onOpenLead }: { le
           </div>
         ))}
       </div>
-      {leads.length > 0 ? (
+      {leadsLoading ? (
+        <div className="py-20 text-center bg-white border border-dashed border-gray-200 rounded-[2rem]">
+          <Loader2 size={32} className="mx-auto text-gray-300 animate-spin-custom mb-4" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-300">Loading leads...</p>
+        </div>
+      ) : leads.length > 0 ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-[12px] font-black tracking-tight uppercase text-gray-400">Available Opportunities</h2>
@@ -336,7 +384,7 @@ function DashboardView({ leads, purchasedLeads, setActiveTab, onOpenLead }: { le
 }
 
 // --- Leads View ---
-function LeadsView({ leads, purchasedLeads, onOpenLead }: { leads: Lead[]; purchasedLeads: Lead[]; onOpenLead: (l: Lead) => void }) {
+function LeadsView({ leads, purchasedLeads, onOpenLead, loading, error }: { leads: Lead[]; purchasedLeads: Lead[]; onOpenLead: (l: Lead) => void; loading?: boolean; error?: string }) {
   const [subTab, setSubTab] = useState('available');
   const displayLeads = subTab === 'available' ? leads : purchasedLeads;
   return (
@@ -346,7 +394,18 @@ function LeadsView({ leads, purchasedLeads, onOpenLead }: { leads: Lead[]; purch
         <button onClick={() => setSubTab('purchased')} className={`px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'purchased' ? 'bg-white shadow-sm text-black' : 'text-gray-400'}`}>Purchased ({purchasedLeads.length})</button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 pb-12">
-        {displayLeads.length > 0 ? displayLeads.map(lead => <LeadTile key={lead.id} lead={lead} purchased={subTab === 'purchased'} onOpen={onOpenLead} />) : (
+        {loading ? (
+          <div className="col-span-full py-32 text-center">
+            <Loader2 size={28} className="mx-auto text-gray-300 animate-spin-custom mb-4" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-300">Loading leads...</p>
+          </div>
+        ) : error ? (
+          <div className="col-span-full py-20 text-center bg-white border border-dashed border-red-100 rounded-[2rem]">
+            <p className="text-[11px] text-red-400 font-bold">{error}</p>
+          </div>
+        ) : displayLeads.length > 0 ? (
+          displayLeads.map(lead => <LeadTile key={lead.id} lead={lead} purchased={subTab === 'purchased'} onOpen={onOpenLead} />)
+        ) : (
           <div className="col-span-full py-32 text-center bg-white border border-dashed border-gray-200 rounded-[2rem]">
             <Inbox size={32} className="mx-auto text-gray-200 mb-4" />
             <h4 className="font-bold text-black text-[12px] uppercase">No {subTab} leads</h4>
@@ -422,7 +481,25 @@ export default function CompanyApp() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [availableLeads, setAvailableLeads] = useState<Lead[]>([]);
   const [purchasedLeads, setPurchasedLeads] = useState<Lead[]>([]);
+  const [leadsLoading, setLeadsLoading] = useState(false);
+  const [leadsError, setLeadsError] = useState('');
   const [profile, setProfile] = useState({ name: '', specialization: 'boat' });
+
+  const fetchLeads = useCallback(async () => {
+    setLeadsLoading(true);
+    setLeadsError('');
+    try {
+      const res = await fetch('/api/leads');
+      if (!res.ok) throw new Error('Failed to load leads');
+      const data = await res.json();
+      setAvailableLeads((data.available || []).map((l: any) => mapApiLead(l, false)));
+      setPurchasedLeads((data.purchased || []).map((l: any) => mapApiLead(l, true)));
+    } catch (err: any) {
+      setLeadsError(err.message || 'Failed to load leads');
+    } finally {
+      setLeadsLoading(false);
+    }
+  }, []);
 
   // Check if user has completed onboarding
   useEffect(() => {
@@ -435,7 +512,6 @@ export default function CompanyApp() {
         if (data.company) {
           setIsOnboarded(true);
           setProfile({ name: data.company.name || '', specialization: 'boat' });
-          // TODO: fetch real leads when API is ready
         }
       })
       .catch(() => {
@@ -444,15 +520,27 @@ export default function CompanyApp() {
       .finally(() => setIsLoading(false));
   }, []);
 
+  // Fetch leads once the company is onboarded
+  useEffect(() => {
+    if (isOnboarded) fetchLeads();
+  }, [isOnboarded, fetchLeads]);
+
   const handleOnboardingComplete = (data: any) => {
     setProfile({ name: data.name, specialization: data.specialization });
     setIsOnboarded(true);
   };
 
-  const handlePurchaseLead = (leadId: string) => {
+  const handlePurchaseLead = (leadId: string, contactInfo: ContactInfo) => {
     const lead = availableLeads.find(l => l.id === leadId);
     if (lead) {
-      setPurchasedLeads(prev => [{ ...lead, purchasedAt: 'Just now' }, ...prev]);
+      const purchasedLead: Lead = {
+        ...lead,
+        purchasedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        customerName: contactInfo.customerName,
+        phone: contactInfo.customerPhone,
+        email: contactInfo.customerEmail,
+      };
+      setPurchasedLeads(prev => [purchasedLead, ...prev]);
       setAvailableLeads(prev => prev.filter(l => l.id !== leadId));
     }
     setSelectedLead(null);
@@ -538,8 +626,8 @@ export default function CompanyApp() {
         </header>
 
         <div className="pb-12">
-          {activeTab === 'dashboard' && <DashboardView leads={availableLeads} purchasedLeads={purchasedLeads} setActiveTab={setActiveTab} onOpenLead={setSelectedLead} />}
-          {activeTab === 'leads' && <LeadsView leads={availableLeads} purchasedLeads={purchasedLeads} onOpenLead={setSelectedLead} />}
+          {activeTab === 'dashboard' && <DashboardView leads={availableLeads} purchasedLeads={purchasedLeads} setActiveTab={setActiveTab} onOpenLead={setSelectedLead} leadsLoading={leadsLoading} />}
+          {activeTab === 'leads' && <LeadsView leads={availableLeads} purchasedLeads={purchasedLeads} onOpenLead={setSelectedLead} loading={leadsLoading} error={leadsError} />}
           {activeTab === 'billing' && <BillingView purchasedLeads={purchasedLeads} />}
         </div>
 
