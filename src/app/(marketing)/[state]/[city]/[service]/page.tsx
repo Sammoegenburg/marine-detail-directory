@@ -10,7 +10,9 @@ import { interpolate, SERVICE_PAGE_TEMPLATE } from "@/lib/seo/templates";
 import { CompanyCard } from "@/components/marketing/CompanyCard";
 import { LeadForm } from "@/components/marketing/LeadForm";
 import { LocalBusinessSchema } from "@/components/seo/LocalBusinessSchema";
+import { FadeUp } from "@/components/marketing/FadeUp";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import type { Metadata } from "next";
 import type { PublicCompany } from "@/types";
 
@@ -57,9 +59,34 @@ async function getPageData(stateSlug: string, citySlug: string, serviceSlug: str
         services: { some: { serviceId: service.id, isActive: true } },
       },
       orderBy: [{ isFeatured: "desc" }, { averageRating: "desc" }],
-      include: {
-        city: { include: { state: true } },
-        services: { include: { service: true }, where: { isActive: true } },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        description: true,
+        logoUrl: true,
+        coverImageUrl: true,
+        photoUrls: true,
+        yearEstablished: true,
+        isInsured: true,
+        isFeatured: true,
+        averageRating: true,
+        reviewCount: true,
+        city: {
+          select: {
+            name: true,
+            slug: true,
+            state: { select: { name: true, slug: true } },
+          },
+        },
+        services: {
+          where: { isActive: true },
+          select: {
+            customPrice: true,
+            service: { select: { name: true, slug: true } },
+          },
+        },
       },
     }),
   ]);
@@ -94,7 +121,6 @@ export default async function ServicePage({ params }: Props) {
     slug: c.slug,
     status: c.status as PublicCompany["status"],
     description: c.description,
-    website: c.website,
     logoUrl: c.logoUrl,
     coverImageUrl: c.coverImageUrl,
     photoUrls: c.photoUrls,
@@ -116,60 +142,76 @@ export default async function ServicePage({ params }: Props) {
         state={city.state.abbreviation}
       />
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex items-center gap-2 text-sm text-slate-500 mb-6 flex-wrap">
-          <Link href="/">Home</Link>
-          <span>/</span>
-          <Link href={`/${stateSlug}`}>{city.state.name}</Link>
-          <span>/</span>
-          <Link href={`/${stateSlug}/${citySlug}`}>{city.name}</Link>
-          <span>/</span>
-          <span>{service.name}</span>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2">
-            <h1 className="text-4xl font-bold text-slate-900 mb-3">
-              {page?.h1 ?? `${service.name} in ${city.name}, ${city.state.abbreviation}`}
-            </h1>
-            <p className="text-lg text-slate-600 mb-8 leading-relaxed">{content}</p>
-
-            <h2 className="text-xl font-semibold text-slate-900 mb-4">
-              {service.name} Specialists in {city.name} ({publicCompanies.length})
-            </h2>
-
-            {publicCompanies.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {publicCompanies.map((company) => (
-                  <CompanyCard key={company.id} company={company} />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-lg border border-dashed p-8 text-center text-slate-400">
-                No verified {service.name.toLowerCase()} specialists listed yet in {city.name}.
-                <br />
-                <Link href="/register" className="text-blue-600 hover:underline text-sm mt-2 inline-block">
-                  List your business →
-                </Link>
-              </div>
-            )}
+      <div className="min-h-screen bg-[#F7F7F9] font-sans">
+        {/* Hero */}
+        <section className="pt-16 pb-10 px-6 max-w-[1400px] mx-auto">
+          <div className="flex items-center gap-2 text-sm text-gray-400 mb-6 font-medium flex-wrap">
+            <Link href="/" className="hover:text-black transition-colors">Home</Link>
+            <ChevronRight className="h-3 w-3" />
+            <Link href={`/${stateSlug}`} className="hover:text-black transition-colors">{city.state.name}</Link>
+            <ChevronRight className="h-3 w-3" />
+            <Link href={`/${stateSlug}/${citySlug}`} className="hover:text-black transition-colors">{city.name}</Link>
+            <ChevronRight className="h-3 w-3" />
+            <span className="text-[#1d1d1f]">{service.name}</span>
           </div>
 
-          <aside>
-            <div className="sticky top-24 rounded-xl border bg-white p-6 shadow-sm">
-              <h3 className="font-semibold text-slate-900 mb-1">
-                Get a Free {service.name} Quote
-              </h3>
-              <p className="text-sm text-slate-500 mb-4">
-                We'll connect you with the top {service.name.toLowerCase()} specialists in {city.name}.
-              </p>
-              <LeadForm
-                defaultServiceId={service.id}
-                services={allServices.map((s) => ({ id: s.id, name: s.name }))}
-              />
+          <FadeUp>
+            <h1 className="text-5xl md:text-[64px] font-bold tracking-tighter text-[#1d1d1f] mb-4 leading-[1.05]">
+              {page?.h1 ?? `${service.name} in ${city.name}, ${city.state.abbreviation}`}
+            </h1>
+            <p className="text-lg md:text-xl text-gray-500 font-medium tracking-tight max-w-2xl leading-relaxed">
+              {content}
+            </p>
+          </FadeUp>
+        </section>
+
+        {/* Two-column layout */}
+        <section className="px-6 pb-20 max-w-[1400px] mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            {/* Company listings */}
+            <div className="lg:col-span-2">
+              <FadeUp>
+                <h2 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mb-6">
+                  {service.name} Specialists in {city.name} ({publicCompanies.length})
+                </h2>
+              </FadeUp>
+
+              {publicCompanies.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {publicCompanies.map((company, i) => (
+                    <FadeUp key={company.id} delay={i * 50}>
+                      <CompanyCard company={company} />
+                    </FadeUp>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-12 text-center text-gray-400">
+                  No verified {service.name.toLowerCase()} specialists listed yet in {city.name}.
+                  <br />
+                  <Link href="/register" className="text-black font-semibold hover:underline text-sm mt-2 inline-block">
+                    List your business →
+                  </Link>
+                </div>
+              )}
             </div>
-          </aside>
-        </div>
+
+            {/* Glassmorphic sticky form */}
+            <aside>
+              <div className="sticky top-24 rounded-2xl bg-white/80 backdrop-blur-xl border border-gray-100 p-6 shadow-sm">
+                <h3 className="font-bold text-[#1d1d1f] tracking-tight text-lg mb-1">
+                  Get a Free {service.name} Quote
+                </h3>
+                <p className="text-sm text-gray-500 mb-4 font-medium">
+                  We&apos;ll connect you with the top {service.name.toLowerCase()} specialists in {city.name}.
+                </p>
+                <LeadForm
+                  defaultServiceId={service.id}
+                  services={allServices.map((s) => ({ id: s.id, name: s.name }))}
+                />
+              </div>
+            </aside>
+          </div>
+        </section>
       </div>
     </>
   );

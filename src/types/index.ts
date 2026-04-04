@@ -54,7 +54,6 @@ export type PublicCompany = {
   slug: string;
   status: CompanyStatus;
   description: string | null;
-  website: string | null;
   logoUrl: string | null;
   coverImageUrl: string | null;
   photoUrls: string[];
@@ -65,7 +64,7 @@ export type PublicCompany = {
   reviewCount: number;
   city: { name: string; slug: string; state: { name: string; slug: string } };
   services: Array<{ service: { name: string; slug: string }; customPrice: string | null }>;
-  // phone/email intentionally omitted — only unlocked via lead purchase
+  // phone/email/website intentionally omitted — only unlocked via lead purchase
 };
 
 export type LeadFormData = {

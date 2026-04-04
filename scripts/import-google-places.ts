@@ -206,23 +206,23 @@ async function main() {
       continue;
     }
 
-    // Skip generic/unrelated results
+    // Require at least one marine keyword — skip auto/car detailers
     const name = details.name.toLowerCase();
-    const isRelevant =
-      name.includes("boat") ||
-      name.includes("marine") ||
-      name.includes("yacht") ||
-      name.includes("detail") ||
-      name.includes("clean") ||
-      name.includes("wash") ||
-      name.includes("hull") ||
-      name.includes("nautical") ||
-      name.includes("charter") ||
-      name.includes("sail") ||
-      name.includes("vessel");
+    const MARINE_KEYWORDS = [
+      "boat",
+      "marine",
+      "yacht",
+      "hull",
+      "watercraft",
+      "vessel",
+      "nautical",
+      "dock",
+      "marina",
+    ];
+    const hasMarine = MARINE_KEYWORDS.some((kw) => name.includes(kw));
 
-    if (!isRelevant) {
-      console.log(`  ↩  Skipping irrelevant: "${details.name}"`);
+    if (!hasMarine) {
+      console.log(`  ↩  Skipping non-marine: "${details.name}"`);
       skipped++;
       continue;
     }

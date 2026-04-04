@@ -9,7 +9,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Anchor, Loader2, Building2 } from "lucide-react";
+import { Ship, Loader2, Building2 } from "lucide-react";
 
 type ClaimCompany = {
   name: string;
@@ -75,26 +75,28 @@ export function RegisterForm({ claimSlug, claimCompany }: Props) {
   const isClaiming = !!claimSlug && !!claimCompany;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#F7F7F9] font-sans px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-blue-700 font-bold text-xl">
-            <Anchor className="h-5 w-5" />
-            MarineDetailDirectory
+          <Link href="/" className="inline-flex items-center gap-2 group">
+            <div className="bg-black text-white p-2 rounded-lg group-hover:scale-105 transition-transform">
+              <Ship size={18} strokeWidth={2.5} />
+            </div>
+            <span className="text-xl font-bold tracking-tight text-[#1d1d1f]">MarineDirectory.</span>
           </Link>
-          <h1 className="text-2xl font-bold text-slate-900 mt-4">
+          <h1 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mt-6">
             {isClaiming ? "Claim Your Listing" : "List your business"}
           </h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <p className="text-gray-500 text-sm mt-1 font-medium">
             Already have an account?{" "}
-            <Link href="/login" className="text-blue-700 hover:underline">Sign in</Link>
+            <Link href="/login" className="text-black font-semibold hover:underline">Sign in</Link>
           </p>
         </div>
 
         {/* Claim context banner */}
         {isClaiming && claimCompany && (
-          <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
             <div className="flex items-start gap-3">
               <Building2 className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
               <div>
@@ -112,26 +114,34 @@ export function RegisterForm({ claimSlug, claimCompany }: Props) {
           </div>
         )}
 
-        <div className="bg-white rounded-xl border shadow-sm p-6">
+        {/* Glassmorphic card */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-100 shadow-sm p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input id="name" name="name" placeholder="Jane Smith" required />
+              <Label htmlFor="name" className="text-sm font-semibold text-[#1d1d1f]">Full Name</Label>
+              <Input
+                id="name"
+                name="name"
+                placeholder="Jane Smith"
+                required
+                className="rounded-xl border-gray-200 focus:border-gray-900 focus:ring-0 font-medium"
+              />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm font-semibold text-[#1d1d1f]">Email</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
                 placeholder="jane@mydetailco.com"
                 required
+                className="rounded-xl border-gray-200 focus:border-gray-900 focus:ring-0 font-medium"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-sm font-semibold text-[#1d1d1f]">Password</Label>
               <Input
                 id="password"
                 name="password"
@@ -139,28 +149,30 @@ export function RegisterForm({ claimSlug, claimCompany }: Props) {
                 placeholder="Min. 8 characters"
                 required
                 minLength={8}
+                className="rounded-xl border-gray-200 focus:border-gray-900 focus:ring-0 font-medium"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-sm font-semibold text-[#1d1d1f]">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 name="confirmPassword"
                 type="password"
                 placeholder="••••••••"
                 required
+                className="rounded-xl border-gray-200 focus:border-gray-900 focus:ring-0 font-medium"
               />
             </div>
 
             {error && (
-              <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>
+              <p className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2 font-medium">{error}</p>
             )}
 
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-700 hover:bg-blue-800"
+              className="w-full bg-black hover:bg-gray-800 text-white rounded-full font-semibold py-2.5 transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5"
             >
               {isLoading ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating account…</>
@@ -172,9 +184,9 @@ export function RegisterForm({ claimSlug, claimCompany }: Props) {
             </Button>
           </form>
 
-          <p className="text-xs text-slate-400 text-center mt-4">
+          <p className="text-xs text-gray-400 text-center mt-4">
             By registering, you agree to our{" "}
-            <Link href="/terms" className="underline">Terms of Service</Link>.
+            <Link href="/terms" className="underline hover:text-gray-600">Terms of Service</Link>.
           </p>
         </div>
       </div>

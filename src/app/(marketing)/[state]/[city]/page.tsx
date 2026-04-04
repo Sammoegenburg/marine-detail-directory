@@ -10,7 +10,9 @@ import { interpolate, CITY_HUB_TEMPLATE } from "@/lib/seo/templates";
 import { CompanyCard } from "@/components/marketing/CompanyCard";
 import { LeadForm } from "@/components/marketing/LeadForm";
 import { LocalBusinessSchema } from "@/components/seo/LocalBusinessSchema";
+import { FadeUp } from "@/components/marketing/FadeUp";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import type { Metadata } from "next";
 import type { PublicCompany } from "@/types";
 
@@ -46,9 +48,34 @@ export default async function CityHubPage({ params }: Props) {
       companies: {
         where: { status: "ACTIVE" },
         orderBy: [{ isFeatured: "desc" }, { averageRating: "desc" }],
-        include: {
-          city: { include: { state: true } },
-          services: { include: { service: true }, where: { isActive: true } },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          status: true,
+          description: true,
+          logoUrl: true,
+          coverImageUrl: true,
+          photoUrls: true,
+          yearEstablished: true,
+          isInsured: true,
+          isFeatured: true,
+          averageRating: true,
+          reviewCount: true,
+          city: {
+            select: {
+              name: true,
+              slug: true,
+              state: { select: { name: true, slug: true } },
+            },
+          },
+          services: {
+            where: { isActive: true },
+            select: {
+              customPrice: true,
+              service: { select: { name: true, slug: true } },
+            },
+          },
         },
       },
     },
@@ -69,7 +96,6 @@ export default async function CityHubPage({ params }: Props) {
     slug: c.slug,
     status: c.status as PublicCompany["status"],
     description: c.description,
-    website: c.website,
     logoUrl: c.logoUrl,
     coverImageUrl: c.coverImageUrl,
     photoUrls: c.photoUrls,
@@ -93,66 +119,84 @@ export default async function CityHubPage({ params }: Props) {
         longitude={city.longitude ? Number(city.longitude) : undefined}
       />
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex items-center gap-2 text-sm text-slate-500 mb-6">
-          <Link href="/">Home</Link>
-          <span>/</span>
-          <Link href={`/${stateSlug}`}>{city.state.name}</Link>
-          <span>/</span>
-          <span>{city.name}</span>
-        </div>
+      <div className="min-h-screen bg-[#F7F7F9] font-sans">
+        {/* Hero */}
+        <section className="pt-16 pb-10 px-6 max-w-[1400px] mx-auto">
+          <div className="flex items-center gap-2 text-sm text-gray-400 mb-6 font-medium flex-wrap">
+            <Link href="/" className="hover:text-black transition-colors">Home</Link>
+            <ChevronRight className="h-3 w-3" />
+            <Link href={`/${stateSlug}`} className="hover:text-black transition-colors">{city.state.name}</Link>
+            <ChevronRight className="h-3 w-3" />
+            <span className="text-[#1d1d1f]">{city.name}</span>
+          </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2">
-            <h1 className="text-4xl font-bold text-slate-900 mb-3">
+          <FadeUp>
+            <h1 className="text-5xl md:text-[64px] font-bold tracking-tighter text-[#1d1d1f] mb-4 leading-[1.05]">
               Boat Detailing in {city.name}, {city.state.abbreviation}
             </h1>
-            <p className="text-lg text-slate-600 mb-8">{content}</p>
+            <p className="text-lg md:text-xl text-gray-500 font-medium tracking-tight max-w-2xl leading-relaxed mb-8">
+              {content}
+            </p>
+          </FadeUp>
 
-            {city.pages.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold text-slate-900 mb-3">Services in {city.name}</h2>
+          {city.pages.length > 0 && (
+            <FadeUp delay={100}>
+              <div className="mb-2">
+                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3">Services in {city.name}</p>
                 <div className="flex flex-wrap gap-2">
                   {city.pages.map((page) => (
                     <Link
                       key={page.id}
                       href={`/${stateSlug}/${citySlug}/${page.service.slug}`}
-                      className="rounded-full border px-4 py-1.5 text-sm font-medium text-slate-700 hover:border-blue-400 hover:text-blue-700 transition-colors"
+                      className="rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-semibold text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-all shadow-sm"
                     >
                       {page.service.name}
                     </Link>
                   ))}
                 </div>
               </div>
-            )}
+            </FadeUp>
+          )}
+        </section>
 
-            <h2 className="text-xl font-semibold text-slate-900 mb-4">
-              Detailers in {city.name} ({publicCompanies.length})
-            </h2>
+        {/* Two-column layout */}
+        <section className="px-6 pb-20 max-w-[1400px] mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            {/* Company listings */}
+            <div className="lg:col-span-2">
+              <FadeUp>
+                <h2 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mb-6">
+                  Detailers in {city.name} ({publicCompanies.length})
+                </h2>
+              </FadeUp>
 
-            {publicCompanies.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {publicCompanies.map((company) => (
-                  <CompanyCard key={company.id} company={company} />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-lg border border-dashed p-8 text-center text-slate-400">
-                No verified detailers listed yet in {city.name}.
-              </div>
-            )}
-          </div>
-
-          <aside>
-            <div className="sticky top-24 rounded-xl border bg-white p-6 shadow-sm">
-              <h3 className="font-semibold text-slate-900 mb-1">Get a Free Quote</h3>
-              <p className="text-sm text-slate-500 mb-4">
-                Tell us about your boat and we'll connect you with local detailers.
-              </p>
-              <LeadForm services={services.map((s) => ({ id: s.id, name: s.name }))} />
+              {publicCompanies.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {publicCompanies.map((company, i) => (
+                    <FadeUp key={company.id} delay={i * 50}>
+                      <CompanyCard company={company} />
+                    </FadeUp>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-12 text-center text-gray-400">
+                  No verified detailers listed yet in {city.name}.
+                </div>
+              )}
             </div>
-          </aside>
-        </div>
+
+            {/* Glassmorphic sticky form */}
+            <aside>
+              <div className="sticky top-24 rounded-2xl bg-white/80 backdrop-blur-xl border border-gray-100 p-6 shadow-sm">
+                <h3 className="font-bold text-[#1d1d1f] tracking-tight text-lg mb-1">Get a Free Quote</h3>
+                <p className="text-sm text-gray-500 mb-4 font-medium">
+                  Tell us about your boat and we&apos;ll connect you with local detailers.
+                </p>
+                <LeadForm services={services.map((s) => ({ id: s.id, name: s.name }))} />
+              </div>
+            </aside>
+          </div>
+        </section>
       </div>
     </>
   );

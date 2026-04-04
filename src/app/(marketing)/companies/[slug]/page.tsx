@@ -10,11 +10,12 @@ import { LocalBusinessSchema } from "@/components/seo/LocalBusinessSchema";
 import { ReviewSchema } from "@/components/seo/ReviewSchema";
 import { LeadForm } from "@/components/marketing/LeadForm";
 import { ReviewStars } from "@/components/marketing/ReviewStars";
+import { FadeUp } from "@/components/marketing/FadeUp";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import Link from "next/link";
-import { Shield, Calendar, Globe, MapPin, Building2 } from "lucide-react";
+import { Shield, Calendar, MapPin, Building2, ChevronRight } from "lucide-react";
 import type { Metadata } from "next";
 
 type Props = {
@@ -56,7 +57,6 @@ export default async function CompanyProfilePage({ params }: Props) {
 
   if (!company) notFound();
 
-  // Only show full profile for ACTIVE or PENDING companies; unclaimed still shows but with claim CTA
   if (company.status === "SUSPENDED") notFound();
 
   const allServices = await prisma.service.findMany({ orderBy: { name: "asc" } });
@@ -91,171 +91,189 @@ export default async function CompanyProfilePage({ params }: Props) {
         companyName={company.name}
       />
 
-      <div className="container mx-auto px-4 py-12">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-slate-500 mb-6 flex-wrap">
-          <Link href="/">Home</Link>
-          <span>/</span>
-          <Link href={`/${stateSlug}`}>{company.city.state.name}</Link>
-          <span>/</span>
-          <Link href={`/${stateSlug}/${citySlug}`}>{company.city.name}</Link>
-          <span>/</span>
-          <span>{company.name}</span>
-        </div>
-
-        {/* Claim CTA banner — shown when listing is unclaimed */}
-        {isUnclaimed && (
-          <div className="mb-8 rounded-xl border border-amber-200 bg-amber-50 p-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <Building2 className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-amber-900">Own this business?</p>
-                  <p className="text-sm text-amber-700 mt-0.5">
-                    Claim your free profile to manage leads, respond to customers, and grow your business.
-                  </p>
-                </div>
-              </div>
-              <Link
-                href={`/register?claim=${company.slug}`}
-                className="shrink-0 inline-flex items-center justify-center rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 transition-colors"
-              >
-                Claim This Profile →
-              </Link>
-            </div>
+      <div className="min-h-screen bg-[#F7F7F9] font-sans">
+        <div className="max-w-[1200px] mx-auto px-6 py-12">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm text-gray-400 mb-6 font-medium flex-wrap">
+            <Link href="/" className="hover:text-black transition-colors">Home</Link>
+            <ChevronRight className="h-3 w-3" />
+            <Link href={`/${stateSlug}`} className="hover:text-black transition-colors">{company.city.state.name}</Link>
+            <ChevronRight className="h-3 w-3" />
+            <Link href={`/${stateSlug}/${citySlug}`} className="hover:text-black transition-colors">{company.city.name}</Link>
+            <ChevronRight className="h-3 w-3" />
+            <span className="text-[#1d1d1f]">{company.name}</span>
           </div>
-        )}
 
-        {/* Cover image */}
-        <div className="relative h-48 md:h-64 rounded-xl overflow-hidden bg-slate-100 mb-6">
-          {company.coverImageUrl ? (
-            <Image src={company.coverImageUrl} alt="" fill className="object-cover" />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center text-6xl">
-              ⚓
+          {/* Claim CTA banner */}
+          {isUnclaimed && (
+            <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <Building2 className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-amber-900">Own this business?</p>
+                    <p className="text-sm text-amber-700 mt-0.5">
+                      Claim your free profile to manage leads, respond to customers, and grow your business.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href={`/register?claim=${company.slug}`}
+                  className="shrink-0 inline-flex items-center justify-center rounded-full bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 transition-colors"
+                >
+                  Claim This Profile →
+                </Link>
+              </div>
             </div>
           )}
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2 space-y-8">
-            {/* Header */}
-            <div className="flex items-start gap-4">
-              {company.logoUrl && (
-                <div className="relative h-16 w-16 rounded-full overflow-hidden border-2 border-white shadow shrink-0">
-                  <Image src={company.logoUrl} alt="" fill className="object-contain" />
+          {/* Cover image */}
+          <FadeUp>
+            <div className="relative h-48 md:h-72 rounded-2xl overflow-hidden bg-gray-100 mb-8 shadow-sm border border-gray-100">
+              {company.coverImageUrl ? (
+                <Image src={company.coverImageUrl} alt="" fill className="object-cover" />
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center text-6xl">
+                  ⚓
                 </div>
               )}
-              <div>
-                <h1 className="text-3xl font-bold text-slate-900">{company.name}</h1>
-                <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
-                  <MapPin className="h-4 w-4" />
-                  {company.city.name}, {company.city.state.abbreviation}
-                  {company.zipCode && ` ${company.zipCode}`}
-                </div>
-                {company.averageRating !== null && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <ReviewStars rating={Number(company.averageRating)} />
-                    <span className="text-sm text-slate-500">
-                      {Number(company.averageRating).toFixed(1)} ({company.reviewCount} reviews)
-                    </span>
-                  </div>
-                )}
-              </div>
             </div>
+          </FadeUp>
 
-            {/* Trust badges */}
-            <div className="flex flex-wrap gap-3">
-              {company.isInsured && (
-                <Badge className="gap-1 bg-green-50 text-green-700 border-green-200 hover:bg-green-50">
-                  <Shield className="h-3 w-3" /> Licensed & Insured
-                </Badge>
-              )}
-              {company.yearEstablished && (
-                <Badge variant="outline" className="gap-1">
-                  <Calendar className="h-3 w-3" /> Est. {company.yearEstablished}
-                </Badge>
-              )}
-              {company.website && (
-                <a href={company.website} target="_blank" rel="noopener noreferrer">
-                  <Badge variant="outline" className="gap-1 hover:border-blue-400">
-                    <Globe className="h-3 w-3" /> Website
-                  </Badge>
-                </a>
-              )}
-            </div>
-
-            {/* Description */}
-            {company.description && (
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900 mb-2">About</h2>
-                <p className="text-slate-600 leading-relaxed">{company.description}</p>
-              </div>
-            )}
-
-            {/* Services */}
-            {company.services.length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900 mb-3">Services Offered</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {company.services.map((cs) => (
-                    <div key={cs.id} className="flex items-center justify-between rounded-lg border p-3">
-                      <span className="text-sm font-medium text-slate-800">{cs.service.name}</span>
-                      {cs.customPrice && (
-                        <span className="text-sm text-slate-500">{cs.customPrice}</span>
-                      )}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="lg:col-span-2 space-y-8">
+              {/* Header */}
+              <FadeUp>
+                <div className="flex items-start gap-4">
+                  {company.logoUrl && (
+                    <div className="relative h-16 w-16 rounded-full overflow-hidden border-2 border-white shadow shrink-0">
+                      <Image src={company.logoUrl} alt="" fill className="object-contain" />
                     </div>
-                  ))}
+                  )}
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#1d1d1f]">{company.name}</h1>
+                    <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
+                      <MapPin className="h-4 w-4" />
+                      {company.city.name}, {company.city.state.abbreviation}
+                      {company.zipCode && ` ${company.zipCode}`}
+                    </div>
+                    {company.averageRating !== null && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <ReviewStars rating={Number(company.averageRating)} />
+                        <span className="text-sm text-gray-500">
+                          {Number(company.averageRating).toFixed(1)} ({company.reviewCount} reviews)
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              </FadeUp>
 
-            {/* Reviews */}
-            {company.reviews.length > 0 && (
-              <div>
-                <Separator className="mb-6" />
-                <h2 className="text-lg font-semibold text-slate-900 mb-4">
-                  Reviews ({company.reviewCount})
-                </h2>
-                <div className="space-y-4">
-                  {company.reviews.map((review) => (
-                    <div key={review.id} className="rounded-lg border p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <p className="font-medium text-slate-900 text-sm">{review.authorName}</p>
-                          {review.publishedAt && (
-                            <p className="text-xs text-slate-400">
-                              {new Date(review.publishedAt).toLocaleDateString()}
-                            </p>
+              {/* Trust badges */}
+              <FadeUp delay={50}>
+                <div className="flex flex-wrap gap-3">
+                  {company.isInsured && (
+                    <Badge className="gap-1 bg-green-50 text-green-700 border-green-200 hover:bg-green-50 rounded-full px-3 py-1">
+                      <Shield className="h-3 w-3" /> Licensed & Insured
+                    </Badge>
+                  )}
+                  {company.yearEstablished && (
+                    <Badge variant="outline" className="gap-1 rounded-full px-3 py-1">
+                      <Calendar className="h-3 w-3" /> Est. {company.yearEstablished}
+                    </Badge>
+                  )}
+                </div>
+              </FadeUp>
+
+              {/* Request a Quote CTA */}
+              <FadeUp delay={100}>
+                <a
+                  href="#quote-form"
+                  className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded-full font-semibold text-sm hover:bg-gray-800 transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5"
+                >
+                  Request a Quote from {company.name}
+                  <ChevronRight className="h-4 w-4" />
+                </a>
+              </FadeUp>
+
+              {/* Description */}
+              {company.description && (
+                <FadeUp delay={150}>
+                  <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+                    <h2 className="text-lg font-bold tracking-tight text-[#1d1d1f] mb-3">About</h2>
+                    <p className="text-gray-600 leading-relaxed">{company.description}</p>
+                  </div>
+                </FadeUp>
+              )}
+
+              {/* Services */}
+              {company.services.length > 0 && (
+                <FadeUp delay={200}>
+                  <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+                    <h2 className="text-lg font-bold tracking-tight text-[#1d1d1f] mb-4">Services Offered</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {company.services.map((cs) => (
+                        <div key={cs.id} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 p-3">
+                          <span className="text-sm font-medium text-[#1d1d1f]">{cs.service.name}</span>
+                          {cs.customPrice && (
+                            <span className="text-sm text-gray-400">{cs.customPrice}</span>
                           )}
                         </div>
-                        <ReviewStars rating={review.rating} size="sm" />
-                      </div>
-                      {review.title && (
-                        <p className="font-medium text-slate-800 text-sm mb-1">{review.title}</p>
-                      )}
-                      <p className="text-slate-600 text-sm">{review.body}</p>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+                  </div>
+                </FadeUp>
+              )}
 
-          {/* Lead form sidebar */}
-          <aside>
-            <div className="sticky top-24 rounded-xl border bg-white p-6 shadow-sm">
-              <h3 className="font-semibold text-slate-900 mb-1">
-                {isUnclaimed ? "Request a Quote" : `Request a Quote from ${company.name}`}
-              </h3>
-              <p className="text-sm text-slate-500 mb-4">
-                {isUnclaimed
-                  ? "Fill out the form and a local detailer will contact you."
-                  : `Fill out the form and ${company.name} will contact you directly.`}
-              </p>
-              <LeadForm services={allServices.map((s) => ({ id: s.id, name: s.name }))} />
+              {/* Reviews */}
+              {company.reviews.length > 0 && (
+                <FadeUp delay={250}>
+                  <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+                    <Separator className="mb-6" />
+                    <h2 className="text-lg font-bold tracking-tight text-[#1d1d1f] mb-4">
+                      Reviews ({company.reviewCount})
+                    </h2>
+                    <div className="space-y-4">
+                      {company.reviews.map((review) => (
+                        <div key={review.id} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="font-medium text-[#1d1d1f] text-sm">{review.authorName}</p>
+                              {review.publishedAt && (
+                                <p className="text-xs text-gray-400">
+                                  {new Date(review.publishedAt).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                            <ReviewStars rating={review.rating} size="sm" />
+                          </div>
+                          {review.title && (
+                            <p className="font-medium text-[#1d1d1f] text-sm mb-1">{review.title}</p>
+                          )}
+                          <p className="text-gray-600 text-sm">{review.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </FadeUp>
+              )}
             </div>
-          </aside>
+
+            {/* Lead form sidebar */}
+            <aside id="quote-form">
+              <div className="sticky top-24 rounded-2xl bg-white/80 backdrop-blur-xl border border-gray-100 p-6 shadow-sm">
+                <h3 className="font-bold text-[#1d1d1f] tracking-tight text-lg mb-1">
+                  {isUnclaimed ? "Request a Quote" : `Request a Quote from ${company.name}`}
+                </h3>
+                <p className="text-sm text-gray-500 mb-4 font-medium">
+                  {isUnclaimed
+                    ? "Fill out the form and a local detailer will contact you."
+                    : `Fill out the form and ${company.name} will contact you directly.`}
+                </p>
+                <LeadForm services={allServices.map((s) => ({ id: s.id, name: s.name }))} />
+              </div>
+            </aside>
+          </div>
         </div>
       </div>
     </>

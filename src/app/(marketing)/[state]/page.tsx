@@ -7,8 +7,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { generateStateMetadata } from "@/lib/seo/generateMetadata";
 import { interpolate, STATE_HUB_TEMPLATE } from "@/lib/seo/templates";
+import { FadeUp } from "@/components/marketing/FadeUp";
 import Link from "next/link";
-import { MapPin, Building2 } from "lucide-react";
+import { MapPin, ChevronRight } from "lucide-react";
 import type { Metadata } from "next";
 
 type Props = {
@@ -51,45 +52,59 @@ export default async function StateHubPage({ params }: Props) {
   );
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="mb-10">
-        <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
-          <Link href="/" className="hover:text-blue-700">Home</Link>
-          <span>/</span>
-          <span>{state.name}</span>
+    <div className="min-h-screen bg-[#F7F7F9] font-sans">
+      {/* Hero */}
+      <section className="pt-16 pb-12 px-6 max-w-[1200px] mx-auto">
+        <div className="flex items-center gap-2 text-sm text-gray-400 mb-6 font-medium">
+          <Link href="/" className="hover:text-black transition-colors">Home</Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-[#1d1d1f]">{state.name}</span>
         </div>
-        <h1 className="text-4xl font-bold text-slate-900 mb-3">
-          Boat Detailing in {state.name}
-        </h1>
-        <p className="text-lg text-slate-600 max-w-2xl">{content}</p>
-      </div>
 
-      <h2 className="text-xl font-semibold text-slate-900 mb-6 flex items-center gap-2">
-        <MapPin className="h-5 w-5 text-blue-600" />
-        Cities in {state.name}
-      </h2>
+        <FadeUp>
+          <h1 className="text-5xl md:text-[64px] font-bold tracking-tighter text-[#1d1d1f] mb-4 leading-[1.05]">
+            Boat Detailing in {state.name}
+          </h1>
+          <p className="text-lg md:text-xl text-gray-500 font-medium tracking-tight max-w-2xl leading-relaxed">
+            {content}
+          </p>
+        </FadeUp>
+      </section>
 
-      {state.cities.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {state.cities.map((city) => (
-            <Link
-              key={city.id}
-              href={`/${stateSlug}/${city.slug}`}
-              className="flex items-start gap-3 rounded-lg border bg-white p-4 hover:border-blue-400 hover:shadow-sm transition-all"
-            >
-              <Building2 className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-slate-900">{city.name}</p>
-                <p className="text-xs text-slate-500">
-                  {city._count.companies} detailer{city._count.companies !== 1 ? "s" : ""}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <p className="text-slate-400">No active cities found for this state yet.</p>
-      )}
+      {/* Cities grid */}
+      <section className="pb-20 px-6 max-w-[1200px] mx-auto">
+        <FadeUp delay={100}>
+          <h2 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mb-6 flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-[#ff385c]" />
+            Cities in {state.name}
+          </h2>
+        </FadeUp>
+
+        {state.cities.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {state.cities.map((city, i) => (
+              <FadeUp key={city.id} delay={i * 40}>
+                <Link
+                  href={`/${stateSlug}/${city.slug}`}
+                  className="group flex items-center justify-between rounded-2xl bg-white border border-gray-100 p-5 shadow-sm hover:shadow-md hover:border-gray-200 hover:-translate-y-0.5 transition-all duration-300"
+                >
+                  <div>
+                    <p className="font-bold text-[#1d1d1f] tracking-tight">{city.name}</p>
+                    <p className="text-sm text-gray-400 mt-0.5">
+                      {city._count.companies} detailer{city._count.companies !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-all" />
+                </Link>
+              </FadeUp>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-12 text-center text-gray-400">
+            No active cities found for this state yet.
+          </div>
+        )}
+      </section>
     </div>
   );
 }

@@ -4,9 +4,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { ReviewStars } from "./ReviewStars";
-import { Shield, Calendar, ExternalLink } from "lucide-react";
+import { Shield, Calendar, ChevronRight } from "lucide-react";
 import type { PublicCompany } from "@/types";
 
 type Props = {
@@ -15,14 +14,15 @@ type Props = {
 
 export function CompanyCard({ company }: Props) {
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      <div className="relative h-36 bg-slate-100">
+    <div className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+      {/* Cover image */}
+      <div className="relative h-36 bg-gray-50">
         {company.coverImageUrl ? (
           <Image
             src={company.coverImageUrl}
             alt={company.name}
             fill
-            className="object-cover"
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
@@ -30,52 +30,56 @@ export function CompanyCard({ company }: Props) {
           </div>
         )}
         {company.isFeatured && (
-          <Badge className="absolute top-2 left-2 bg-amber-500 hover:bg-amber-500 text-white text-xs">
+          <Badge className="absolute top-2 left-2 bg-amber-500 hover:bg-amber-500 text-white text-xs rounded-full px-2.5">
             Featured
           </Badge>
         )}
       </div>
 
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
+      <div className="p-4">
+        {/* Header */}
+        <div className="flex items-start gap-3 mb-3">
           {company.logoUrl && (
-            <div className="relative h-10 w-10 rounded-full overflow-hidden border bg-white shrink-0">
+            <div className="relative h-10 w-10 rounded-full overflow-hidden border border-gray-100 bg-white shrink-0">
               <Image src={company.logoUrl} alt="" fill className="object-contain" />
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-slate-900 truncate">{company.name}</h3>
-            <p className="text-xs text-slate-500">
+            <h3 className="font-bold text-[#1d1d1f] tracking-tight truncate">{company.name}</h3>
+            <p className="text-xs text-gray-400 font-medium mt-0.5">
               {company.city.name}, {company.city.state.name}
             </p>
           </div>
         </div>
 
+        {/* Rating */}
         {company.averageRating !== null && (
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-2 mb-3">
             <ReviewStars rating={company.averageRating} size="sm" />
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-gray-400 font-medium">
               {company.averageRating.toFixed(1)} ({company.reviewCount} reviews)
             </span>
           </div>
         )}
 
+        {/* Services */}
         {company.services.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-3">
+          <div className="flex flex-wrap gap-1 mb-3">
             {company.services.slice(0, 3).map((cs) => (
-              <Badge key={cs.service.slug} variant="secondary" className="text-xs font-normal">
+              <Badge key={cs.service.slug} variant="secondary" className="text-xs font-medium rounded-full px-2.5 bg-gray-100 text-gray-600 hover:bg-gray-100">
                 {cs.service.name}
               </Badge>
             ))}
             {company.services.length > 3 && (
-              <Badge variant="secondary" className="text-xs font-normal">
+              <Badge variant="secondary" className="text-xs font-medium rounded-full px-2.5 bg-gray-100 text-gray-500 hover:bg-gray-100">
                 +{company.services.length - 3} more
               </Badge>
             )}
           </div>
         )}
 
-        <div className="flex items-center gap-3 mt-3 text-xs text-slate-500">
+        {/* Trust indicators */}
+        <div className="flex items-center gap-3 mb-4 text-xs text-gray-400 font-medium">
           {company.isInsured && (
             <span className="flex items-center gap-1 text-green-600">
               <Shield className="h-3 w-3" /> Insured
@@ -88,14 +92,15 @@ export function CompanyCard({ company }: Props) {
           )}
         </div>
 
+        {/* CTA */}
         <Link
           href={`/companies/${company.slug}`}
-          className="mt-4 flex items-center justify-center gap-1 w-full rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 transition-colors"
+          className="flex items-center justify-between w-full bg-black text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all group/btn"
         >
-          View Profile & Get Quote
-          <ExternalLink className="h-3 w-3" />
+          <span>Request a Quote</span>
+          <ChevronRight className="h-4 w-4 group-hover/btn:translate-x-0.5 transition-transform" />
         </Link>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
