@@ -15,7 +15,7 @@ type Lead = {
   boatType: string | null;
   boatMake: string | null;
   boatYear: number | null;
-  zipCode: string;
+  zipCode: string | null;
   notes: string | null;
   preferredDate: Date | null;
   leadPrice: number;
@@ -76,7 +76,7 @@ export function LeadCard({ lead, isPurchased = false }: Props) {
           </div>
           <div className="flex items-center gap-1.5 text-slate-600">
             <MapPin className="h-3.5 w-3.5 text-slate-400" />
-            {lead.city.name}, {lead.city.state.abbreviation} {lead.zipCode}
+            {lead.city.name}, {lead.city.state.abbreviation}
           </div>
           {lead.boatMake && (
             <div className="text-slate-600 text-xs">

@@ -16,7 +16,8 @@ const leadSchema = z.object({
   boatType: z.string().optional(),
   boatYear: z.number().int().min(1900).max(new Date().getFullYear() + 1).optional(),
   boatMake: z.string().optional(),
-  zipCode: z.string().length(5).regex(/^\d+$/),
+  city: z.string().min(2),
+  state: z.string().min(2),
   serviceId: z.string().cuid(),
   notes: z.string().max(500).optional(),
   preferredDate: z.string().optional(),
@@ -36,15 +37,19 @@ export async function POST(req: NextRequest) {
 
     const data = parsed.data;
 
-    // Look up city by zip code
-    const zipRecord = await prisma.zipCode.findUnique({
-      where: { code: data.zipCode },
-      include: { city: { include: { state: true } } },
+    // Look up city by name + state
+    const cityRecord = await prisma.city.findFirst({
+      where: {
+        name: { equals: data.city, mode: "insensitive" },
+        state: { name: { equals: data.state, mode: "insensitive" } },
+        isActive: true,
+      },
+      include: { state: true },
     });
 
-    if (!zipRecord) {
+    if (!cityRecord) {
       return NextResponse.json(
-        { error: "We don't currently serve this zip code." },
+        { error: "We don't currently serve this city. Check back soon!" },
         { status: 422 }
       );
     }
@@ -62,7 +67,7 @@ export async function POST(req: NextRequest) {
     const servicePage = await prisma.servicePage.findUnique({
       where: {
         cityId_serviceId: {
-          cityId: zipRecord.city.id,
+          cityId: cityRecord.id,
           serviceId: service.id,
         },
       },
@@ -82,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     const lead = await prisma.lead.create({
       data: {
-        cityId: zipRecord.city.id,
+        cityId: cityRecord.id,
         serviceId: service.id,
         status: "NEW",
         customerName: data.customerName,
@@ -93,7 +98,7 @@ export async function POST(req: NextRequest) {
         boatType: data.boatType,
         boatYear: data.boatYear,
         boatMake: data.boatMake,
-        zipCode: data.zipCode,
+        zipCode: null,
         notes: data.notes,
         preferredDate: data.preferredDate ? new Date(data.preferredDate) : null,
         leadPrice,
@@ -108,7 +113,7 @@ export async function POST(req: NextRequest) {
     prisma.company
       .findMany({
         where: {
-          cityId: zipRecord.city.id,
+          cityId: cityRecord.id,
           status: "ACTIVE",
           email: { not: null },
         },
@@ -122,8 +127,8 @@ export async function POST(req: NextRequest) {
           return sendNewLeadNotification(
             {
               leadId: lead.id,
-              cityName: zipRecord.city.name,
-              stateName: zipRecord.city.state.name,
+              cityName: cityRecord.name,
+              stateName: cityRecord.state.name,
               serviceName: service.name,
               vehicleType: data.vehicleType,
               boatSize: data.boatSize,

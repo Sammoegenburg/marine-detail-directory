@@ -334,7 +334,7 @@ model Lead {
   boatType      String?
   boatYear      Int?
   boatMake      String?
-  zipCode       String
+  zipCode       String?
   notes         String?    @db.Text
   preferredDate DateTime?
   leadPrice     Decimal    @db.Decimal(8, 2)

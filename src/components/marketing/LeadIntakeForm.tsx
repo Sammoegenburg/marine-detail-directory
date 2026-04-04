@@ -19,7 +19,7 @@ type VehicleType = "CAR" | "BOAT";
 
 type FormData = {
   vehicleType: VehicleType | "";
-  zipCode: string;
+  city: string;
   state: string;
   serviceId: string;
   boatSize: string;
@@ -72,7 +72,7 @@ export function LeadIntakeForm({ defaultCity, defaultState, defaultService, serv
 
   const [form, setForm] = useState<FormData>({
     vehicleType: "",
-    zipCode: "",
+    city: defaultCity ?? "",
     state: defaultState ?? "",
     serviceId: "",
     boatSize: "",
@@ -132,8 +132,8 @@ export function LeadIntakeForm({ defaultCity, defaultState, defaultService, serv
     if (s === 1 && !form.vehicleType) {
       errs.vehicleType = "Please select a vehicle type";
     }
-    if (s === 2 && !/^\d{5}$/.test(form.zipCode)) {
-      errs.zipCode = "Enter a valid 5-digit zip code";
+    if (s === 2 && form.city.trim().length < 2) {
+      errs.city = "Enter your city name";
     }
     if (s === 3 && !form.serviceId) {
       errs.serviceId = "Please select a service";
@@ -172,7 +172,8 @@ export function LeadIntakeForm({ defaultCity, defaultState, defaultService, serv
         customerEmail: form.customerEmail.trim(),
         customerPhone: form.customerPhone.trim(),
         vehicleType: form.vehicleType,
-        zipCode: form.zipCode,
+        city: form.city.trim(),
+        state: form.state,
         serviceId: form.serviceId,
       };
 
@@ -298,22 +299,20 @@ export function LeadIntakeForm({ defaultCity, defaultState, defaultService, serv
           <div>
             <h3 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mb-1">Where are you located?</h3>
             <p className="text-gray-500 text-sm font-medium">
-              {defaultCity ? `Serving ${defaultCity} — confirm your zip code.` : "We'll match you with pros serving your area."}
+              {defaultCity ? `Serving ${defaultCity} — confirm your location.` : "We'll match you with pros serving your area."}
             </p>
           </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Zip Code *</label>
+              <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">City *</label>
               <input
                 type="text"
-                inputMode="numeric"
-                maxLength={5}
-                placeholder="e.g. 33101"
-                value={form.zipCode}
-                onChange={(e) => update("zipCode", e.target.value.replace(/\D/g, ""))}
+                placeholder="e.g. Miami"
+                value={form.city}
+                onChange={(e) => update("city", e.target.value)}
                 className={inputClass}
               />
-              {fieldErrors.zipCode && <p className="text-xs text-red-500 mt-1">{fieldErrors.zipCode}</p>}
+              {fieldErrors.city && <p className="text-xs text-red-500 mt-1">{fieldErrors.city}</p>}
             </div>
             <div>
               <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">State</label>
