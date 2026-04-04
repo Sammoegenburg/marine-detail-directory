@@ -1,10 +1,11 @@
 // src/app/(dashboard)/layout.tsx
-// Dashboard layout — session guard + sidebar + company status check
+// Dashboard layout — session guard
+// COMPANY users: bare wrapper (CompanyDashboardApp owns its own nav/sidebar)
+// ADMIN users: sidebar + content
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 
 export default async function DashboardLayout({
@@ -20,71 +21,16 @@ export default async function DashboardLayout({
 
   const role = (session.user as { role?: string }).role as "ADMIN" | "COMPANY";
 
-  // Read current path so we can exempt /company/onboarding from the company check
-  const headersList = await headers();
-  const pathname = headersList.get("x-pathname") ?? "";
-  const isOnboarding = pathname === "/company/onboarding";
-
-  // Fetch pending verification count for admins to display in sidebar
-  const pendingVerifications =
-    role === "ADMIN"
-      ? await prisma.company.count({ where: { status: "PENDING" } })
-      : 0;
-
-  // For company users, enforce status-based access
+  // Company users: CompanyDashboardApp renders its own full UI (sidebar, nav, etc.)
+  // Just ensure they're authenticated — the server page handles company-specific logic.
   if (role === "COMPANY") {
-    const company = await prisma.company.findUnique({
-      where: { userId: session.user.id },
-      select: { status: true },
-    });
-
-    // No company linked yet → send to onboarding (unless already there)
-    if (!company) {
-      if (isOnboarding) {
-        // Render onboarding full-screen without sidebar
-        return (
-          <div className="min-h-screen bg-[#FBFBFD]">{children}</div>
-        );
-      }
-      redirect("/company/onboarding");
-    }
-
-    if (company.status === "SUSPENDED") {
-      return (
-        <div className="flex min-h-screen bg-slate-50">
-          <DashboardSidebar role={role} pendingVerifications={0} />
-          <div className="flex-1 overflow-auto">
-            <div className="max-w-5xl mx-auto px-6 py-8">
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-10 text-center">
-                <h1 className="text-2xl font-bold text-red-900 mb-3">Account Suspended</h1>
-                <p className="text-red-700 max-w-md mx-auto">
-                  Your account has been suspended. Please contact support for assistance.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (company.status === "PENDING") {
-      return (
-        <div className="flex min-h-screen bg-slate-50">
-          <DashboardSidebar role={role} pendingVerifications={0} />
-          <div className="flex-1 overflow-auto">
-            <div className="max-w-5xl mx-auto px-6 py-8">
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-10 text-center">
-                <h1 className="text-2xl font-bold text-amber-900 mb-3">Your profile is under review</h1>
-                <p className="text-amber-700 max-w-md mx-auto">
-                  Our team is verifying your business. You&apos;ll receive an email once your profile is approved and you can start receiving leads.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
+    return <>{children}</>;
   }
+
+  // Admin users: keep the sidebar layout
+  const pendingVerifications = await prisma.company.count({
+    where: { status: "PENDING" },
+  });
 
   return (
     <div className="flex min-h-screen bg-slate-50">
