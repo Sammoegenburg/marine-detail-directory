@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import Link from "next/link";
-import { Shield, Calendar, Globe, MapPin } from "lucide-react";
+import { Shield, Calendar, Globe, MapPin, Building2 } from "lucide-react";
 import type { Metadata } from "next";
 
 type Props = {
@@ -42,7 +42,7 @@ export default async function CompanyProfilePage({ params }: Props) {
   const { slug } = await params;
 
   const company = await prisma.company.findUnique({
-    where: { slug, status: "ACTIVE" },
+    where: { slug },
     include: {
       city: { include: { state: true } },
       services: { include: { service: true }, where: { isActive: true } },
@@ -56,10 +56,14 @@ export default async function CompanyProfilePage({ params }: Props) {
 
   if (!company) notFound();
 
+  // Only show full profile for ACTIVE or PENDING companies; unclaimed still shows but with claim CTA
+  if (company.status === "SUSPENDED") notFound();
+
   const allServices = await prisma.service.findMany({ orderBy: { name: "asc" } });
 
   const stateSlug = company.city.state.slug;
   const citySlug = company.city.slug;
+  const isUnclaimed = company.status === "UNCLAIMED";
 
   return (
     <>
@@ -88,6 +92,7 @@ export default async function CompanyProfilePage({ params }: Props) {
       />
 
       <div className="container mx-auto px-4 py-12">
+        {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-slate-500 mb-6 flex-wrap">
           <Link href="/">Home</Link>
           <span>/</span>
@@ -97,6 +102,29 @@ export default async function CompanyProfilePage({ params }: Props) {
           <span>/</span>
           <span>{company.name}</span>
         </div>
+
+        {/* Claim CTA banner — shown when listing is unclaimed */}
+        {isUnclaimed && (
+          <div className="mb-8 rounded-xl border border-amber-200 bg-amber-50 p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <Building2 className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-amber-900">Own this business?</p>
+                  <p className="text-sm text-amber-700 mt-0.5">
+                    Claim your free profile to manage leads, respond to customers, and grow your business.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href={`/register?claim=${company.slug}`}
+                className="shrink-0 inline-flex items-center justify-center rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 transition-colors"
+              >
+                Claim This Profile →
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Cover image */}
         <div className="relative h-48 md:h-64 rounded-xl overflow-hidden bg-slate-100 mb-6">
@@ -218,10 +246,12 @@ export default async function CompanyProfilePage({ params }: Props) {
           <aside>
             <div className="sticky top-24 rounded-xl border bg-white p-6 shadow-sm">
               <h3 className="font-semibold text-slate-900 mb-1">
-                Request a Quote from {company.name}
+                {isUnclaimed ? "Request a Quote" : `Request a Quote from ${company.name}`}
               </h3>
               <p className="text-sm text-slate-500 mb-4">
-                Fill out the form and {company.name} will contact you directly.
+                {isUnclaimed
+                  ? "Fill out the form and a local detailer will contact you."
+                  : `Fill out the form and ${company.name} will contact you directly.`}
               </p>
               <LeadForm services={allServices.map((s) => ({ id: s.id, name: s.name }))} />
             </div>

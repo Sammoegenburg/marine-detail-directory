@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { headers } from "next/headers";
+import { sendNewLeadNotification } from "@/lib/brevo";
 
 const leadSchema = z.object({
   customerName: z.string().min(2),
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
     // Look up city by zip code
     const zipRecord = await prisma.zipCode.findUnique({
       where: { code: data.zipCode },
-      include: { city: true },
+      include: { city: { include: { state: true } } },
     });
 
     if (!zipRecord) {
@@ -100,6 +101,38 @@ export async function POST(req: NextRequest) {
         expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000), // 72-hour TTL
       },
     });
+
+    // Broadcast to all ACTIVE companies in the city — fire and forget
+    prisma.company
+      .findMany({
+        where: {
+          cityId: zipRecord.city.id,
+          status: "ACTIVE",
+          email: { not: null },
+        },
+        select: { name: true, email: true },
+      })
+      .then((companies) => {
+        const recipients = companies
+          .filter((c): c is { name: string; email: string } => c.email !== null);
+
+        if (recipients.length > 0) {
+          return sendNewLeadNotification(
+            {
+              leadId: lead.id,
+              cityName: zipRecord.city.name,
+              stateName: zipRecord.city.state.name,
+              serviceName: service.name,
+              boatSize: data.boatSize,
+              leadPrice,
+            },
+            recipients
+          );
+        }
+      })
+      .catch((err) => {
+        console.error("[leads/route] Email broadcast error:", err);
+      });
 
     return NextResponse.json({ success: true, leadId: lead.id }, { status: 201 });
   } catch {

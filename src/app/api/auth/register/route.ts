@@ -1,5 +1,5 @@
 // src/app/api/auth/register/route.ts
-// POST: create a new COMPANY user account
+// POST: create a new COMPANY user account, optionally claiming an unclaimed listing
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -10,6 +10,7 @@ const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(8),
+  claimSlug: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, email, password } = parsed.data;
+    const { name, email, password, claimSlug } = parsed.data;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -34,11 +35,51 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // If claiming, verify the company is still unclaimed before creating the user
+    let claimCompany: { id: string } | null = null;
+    if (claimSlug) {
+      claimCompany = await prisma.company.findUnique({
+        where: { slug: claimSlug },
+        select: { id: true, status: true },
+      }) as { id: string; status: string } | null;
+
+      if (!claimCompany) {
+        return NextResponse.json(
+          { error: "Company not found" },
+          { status: 404 }
+        );
+      }
+
+      if ((claimCompany as { id: string; status: string }).status !== "UNCLAIMED") {
+        return NextResponse.json(
+          { error: "This listing has already been claimed." },
+          { status: 409 }
+        );
+      }
+    }
+
     const passwordHash = await bcrypt.hash(password, 12);
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: { name, email, passwordHash, role: "COMPANY" },
     });
+
+    // Attach user to the company and set status to PENDING for admin review
+    if (claimSlug && claimCompany) {
+      await prisma.company.update({
+        where: { id: claimCompany.id },
+        data: {
+          userId: user.id,
+          status: "PENDING",
+          email: email,
+        },
+      });
+
+      return NextResponse.json(
+        { success: true, redirectUrl: "/company?claimed=true" },
+        { status: 201 }
+      );
+    }
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch {
