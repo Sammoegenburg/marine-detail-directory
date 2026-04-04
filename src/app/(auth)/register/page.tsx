@@ -1,32 +1,18 @@
 // src/app/(auth)/register/page.tsx
-// Server component: resolves ?claim= param and passes company context to form
+// Redirects to the combined auth page (register view)
+// Note: claim flow (?claim=xxx) preserved for backward compatibility
 
-import { prisma } from "@/lib/prisma";
-import { RegisterForm } from "@/components/auth/RegisterForm";
+import { redirect } from "next/navigation";
 
 type Props = {
-  searchParams: Promise<{ claim?: string }>;
+  searchParams: Promise<{ claim?: string; [key: string]: string | undefined }>;
 };
 
 export default async function RegisterPage({ searchParams }: Props) {
-  const { claim } = await searchParams;
-
-  let claimCompany: { name: string; cityName: string; stateName: string } | null = null;
-
-  if (claim) {
-    const company = await prisma.company.findUnique({
-      where: { slug: claim, status: "UNCLAIMED" },
-      include: { city: { include: { state: true } } },
-    });
-
-    if (company) {
-      claimCompany = {
-        name: company.name,
-        cityName: company.city.name,
-        stateName: company.city.state.name,
-      };
-    }
-  }
-
-  return <RegisterForm claimSlug={claim} claimCompany={claimCompany} />;
+  const params = await searchParams;
+  // Preserve any query params (e.g. ?claim=xxx) by passing them through
+  const qs = new URLSearchParams();
+  qs.set("view", "register");
+  if (params.claim) qs.set("claim", params.claim);
+  redirect(`/login?${qs.toString()}`);
 }
