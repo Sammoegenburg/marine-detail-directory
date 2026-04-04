@@ -6,6 +6,7 @@ import {
   claimVerificationEmailHtml,
   claimApprovalEmailHtml,
   claimRejectionEmailHtml,
+  passwordResetEmailHtml,
 } from "./email-templates";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
@@ -125,6 +126,21 @@ export async function sendClaimRejectionEmail(
     });
   } catch (err) {
     console.error("[Brevo] Failed to send rejection email:", err);
+  }
+}
+
+export async function sendPasswordResetEmail(
+  email: string,
+  resetUrl: string
+): Promise<void> {
+  try {
+    await sendEmail({
+      to: [{ email, name: email }],
+      subject: "Reset your DetailHub password",
+      htmlContent: passwordResetEmailHtml({ resetUrl }),
+    });
+  } catch (err) {
+    console.error("[Brevo] Failed to send password reset email:", err);
   }
 }
 

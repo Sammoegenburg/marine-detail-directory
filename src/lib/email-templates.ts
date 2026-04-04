@@ -220,6 +220,48 @@ export function claimApprovalEmailHtml(params: ClaimStatusEmailParams): string {
   return emailWrapper(content);
 }
 
+export type PasswordResetEmailParams = {
+  resetUrl: string;
+};
+
+export function passwordResetEmailHtml(params: PasswordResetEmailParams): string {
+  const { resetUrl } = params;
+
+  const content = `
+    <h2 style="margin:0 0 8px;color:#0f172a;font-size:22px;font-weight:700;">
+      Reset your password
+    </h2>
+    <p style="margin:0 0 24px;color:#64748b;font-size:15px;">
+      We received a request to reset the password for your DetailHub account.
+      Click the button below to choose a new password.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef9f0;border:1px solid #fde68a;border-radius:8px;margin-bottom:28px;">
+      <tr>
+        <td style="padding:16px 24px;">
+          <p style="margin:0;color:#92400e;font-size:13px;line-height:1.6;">
+            This link expires in <strong>1 hour</strong>.
+            If you didn't request a password reset, you can safely ignore this email — your account is safe.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <div style="text-align:center;margin-bottom:16px;">
+      <a href="${resetUrl}"
+         style="display:inline-block;background-color:#000000;color:#ffffff;font-size:15px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;">
+        Reset Password →
+      </a>
+    </div>
+
+    <p style="margin:0;text-align:center;color:#94a3b8;font-size:12px;">
+      Or copy this link: <a href="${resetUrl}" style="color:#64748b;">${resetUrl}</a>
+    </p>
+  `;
+
+  return emailWrapper(content);
+}
+
 export function claimRejectionEmailHtml(params: ClaimStatusEmailParams): string {
   const { companyName, cityName, stateName } = params;
 

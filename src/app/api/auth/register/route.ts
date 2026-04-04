@@ -7,8 +7,12 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 const registerSchema = z.object({
-  name: z.string().min(2),
+  companyName: z.string().min(2),
+  website: z.string().optional(),
   email: z.string().email(),
+  phone: z.string().optional(),
+  homeBase: z.string().optional(),
+  specialization: z.string().optional(),
   password: z.string().min(8),
   claimSlug: z.string().optional(),
 });
@@ -25,7 +29,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, email, password, claimSlug } = parsed.data;
+    const { companyName, website, email, phone, homeBase, specialization, password, claimSlug } = parsed.data;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -61,7 +65,17 @@ export async function POST(req: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 12);
 
     const user = await prisma.user.create({
-      data: { name, email, passwordHash, role: "COMPANY" },
+      data: {
+        name: companyName,
+        email,
+        passwordHash,
+        role: "COMPANY",
+        companyName,
+        website: website ?? null,
+        phone: phone ?? null,
+        homeBase: homeBase ?? null,
+        specialization: specialization ?? null,
+      },
     });
 
     // Attach user to the company and set status to PENDING for admin review
