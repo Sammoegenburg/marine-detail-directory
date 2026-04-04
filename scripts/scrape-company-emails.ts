@@ -37,13 +37,60 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function isJunkEmail(email: string): boolean {
+// Hosted site builders whose domains don't represent the real business
+const HOSTED_BUILDERS = [
+  "godaddysites.com", "wixsite.com", "squarespace.com", "weebly.com",
+  "wordpress.com", "webflow.io", "sites.google.com", "jimdo.com",
+  "yolasite.com", "strikingly.com",
+];
+
+// TLDs that are actually file extensions — reject any email whose domain ends in these
+const ASSET_TLDS = new Set([
+  "png","jpg","jpeg","gif","svg","webp","ico","bmp","tiff",
+  "css","js","ts","json","xml","txt","pdf","zip","gz",
+  "woff","woff2","ttf","eot","otf","map","min",
+]);
+
+function siteBaseDomain(rawUrl: string): string | null {
+  try {
+    const u = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
+    const host = new URL(u).hostname.replace(/^www\./, "");
+    // If it's a hosted builder subdomain, no "own domain" to match against
+    if (HOSTED_BUILDERS.some((b) => host.endsWith(b))) return null;
+    // Return second-level domain (e.g. "mydetailer.com" from "book.mydetailer.com")
+    const parts = host.split(".");
+    return parts.slice(-2).join(".");
+  } catch {
+    return null;
+  }
+}
+
+function isJunkEmail(email: string, siteDomain: string | null): boolean {
   const lower = email.toLowerCase();
   if (JUNK_PREFIXES.some((p) => lower.startsWith(p))) return true;
-  const domain = lower.split("@")[1] ?? "";
+  const parts = lower.split("@");
+  if (parts.length !== 2) return true;
+  const localPart = parts[0];
+  const domain = parts[1];
+
+  // Reject file-extension TLDs
+  const tld = domain.split(".").pop() ?? "";
+  if (ASSET_TLDS.has(tld)) return true;
+
+  // Reject asset-looking local parts
+  if (/\b(icon|logo|badge|btn|img|image|photo|pic|banner|bg|background|sprite|thumb)\b/i.test(localPart)) return true;
+
+  // Reject junk domains
   if (JUNK_DOMAINS.some((d) => domain === d || domain.endsWith("." + d))) return true;
-  // skip image/asset paths that look like emails (contain file extensions before @)
-  if (/\.(png|jpg|jpeg|gif|svg|webp|css|js|woff|ttf)$/i.test(lower.split("@")[0])) return true;
+
+  // If the site has its own domain, ONLY accept emails from that same domain.
+  // This is the key filter: kills template/font author emails (e.g. impallari@gmail.com,
+  // astigma@astigmatic.com) that appear on pages but belong to third-party libraries.
+  if (siteDomain !== null) {
+    const emailDomain = domain.split(".").slice(-2).join(".");
+    if (emailDomain !== siteDomain) return true;
+  }
+
   return false;
 }
 
@@ -66,13 +113,22 @@ async function fetchHtml(url: string): Promise<string | null> {
   }
 }
 
-function extractEmails(html: string): string[] {
-  const raw = html.match(EMAIL_REGEX) ?? [];
+function stripNonContent(html: string): string {
+  // Remove script, style, and svg blocks — emails there are library/font artifacts, not contact info
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<svg[\s\S]*?<\/svg>/gi, " ");
+}
+
+function extractEmails(html: string, siteDomain: string | null): string[] {
+  const clean = stripNonContent(html);
+  const raw = clean.match(EMAIL_REGEX) ?? [];
   const seen = new Set<string>();
   const results: string[] = [];
   for (const e of raw) {
     const lower = e.toLowerCase();
-    if (!seen.has(lower) && !isJunkEmail(lower)) {
+    if (!seen.has(lower) && !isJunkEmail(lower, siteDomain)) {
       seen.add(lower);
       results.push(lower);
     }
@@ -81,7 +137,6 @@ function extractEmails(html: string): string[] {
 }
 
 async function scrapeWebsite(rawUrl: string): Promise<string | null> {
-  // Normalise URL
   let base: string;
   try {
     const u = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
@@ -90,12 +145,13 @@ async function scrapeWebsite(rawUrl: string): Promise<string | null> {
     return null;
   }
 
-  const pathsToTry = ["/", "/contact", "/contact-us", "/about", "/about-us"];
+  const siteDomain = siteBaseDomain(rawUrl);
+  const pathsToTry = ["/contact", "/contact-us", "/about", "/about-us", "/"];
 
   for (const path of pathsToTry) {
     const html = await fetchHtml(`${base}${path}`);
     if (!html) continue;
-    const emails = extractEmails(html);
+    const emails = extractEmails(html, siteDomain);
     if (emails.length > 0) return emails[0];
   }
   return null;
