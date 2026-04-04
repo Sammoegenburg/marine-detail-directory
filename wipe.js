@@ -1,8 +1,9 @@
 // Run from project root: node wipe.js
+// Uses @prisma/client directly (not the generated TS files)
 const path = require('path');
 process.chdir(path.resolve(__dirname));
 
-const { PrismaClient } = require(path.resolve(__dirname, 'src/generated/prisma/client'));
+const { PrismaClient } = require('@prisma/client');
 const { Pool } = require('@neondatabase/serverless');
 const { PrismaNeon } = require('@prisma/adapter-neon');
 

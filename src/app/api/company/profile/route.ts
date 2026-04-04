@@ -16,6 +16,20 @@ const schema = z.object({
   services: z.array(z.string()).optional(),
 });
 
+export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const company = await prisma.company.findUnique({
+    where: { userId: session.user.id },
+    include: { city: { include: { state: true } }, services: { include: { service: true } } },
+  });
+
+  return NextResponse.json({ company });
+}
+
 export async function PUT(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {

@@ -14,26 +14,35 @@ const VALID_CATEGORIES = new Set([
   "PAINT_CORRECTION", "CERAMIC_COATING", "WINDOW_TINT",
 ]);
 
+// Flexible schema — accepts both old multi-step form and new simplified CompanyApp
 const schema = z.object({
-  companyName: z.string().min(2).max(120),
+  // Company name — accept either field name
+  companyName: z.string().min(2).max(120).optional(),
+  name: z.string().min(2).max(120).optional(),
   address: z.string().optional(),
-  city: z.string().min(2).max(80),
-  state: z.string().length(2),
-  zipCode: z.string().min(5).max(10),
-  phone: z.string().min(7).max(30),
-  email: z.string().email(),
-  // Accept any non-empty string; normalize to https:// in handler
-  website: z.string().max(500).optional().or(z.literal("")),
-  vehicleTypes: z.array(z.string()),
-  carServices: z.array(z.string()),
-  boatServices: z.array(z.string()),
-  serviceRadius: z.string(),
-  notifyEmail: z.boolean(),
-  notifyCall: z.boolean(),
-  notifySms: z.boolean(),
-  agreeLeads: z.literal(true),
-  agreeToS: z.literal(true),
-});
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
+  zipcode: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  website: z.string().optional(),
+  // New CompanyApp fields
+  specialization: z.string().optional(),
+  services: z.array(z.string()).optional(),
+  radius: z.number().optional(),
+  serviceArea: z.string().optional(),
+  // Old form fields (still supported)
+  vehicleTypes: z.array(z.string()).optional(),
+  carServices: z.array(z.string()).optional(),
+  boatServices: z.array(z.string()).optional(),
+  serviceRadius: z.string().optional(),
+  notifyEmail: z.boolean().optional(),
+  notifyCall: z.boolean().optional(),
+  notifySms: z.boolean().optional(),
+  agreeLeads: z.boolean().optional(),
+  agreeToS: z.boolean().optional(),
+}).passthrough();
 
 function slugify(str: string): string {
   return str
@@ -78,7 +87,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const data = parsed.data;
+  const raw = parsed.data;
+
+  // Normalize field names — accept both old and new format
+  const data = {
+    companyName: raw.companyName || raw.name || "Unnamed Company",
+    city: raw.city || "",
+    state: raw.state || "",
+    zipCode: raw.zipCode || raw.zipcode || "",
+    phone: raw.phone || "",
+    email: raw.email || "",
+    website: raw.website || "",
+    address: raw.address || "",
+    carServices: raw.carServices || [],
+    boatServices: raw.boatServices || [],
+    services: raw.services || [],
+  };
 
   // Normalize website: prepend https:// if user omitted the protocol
   if (data.website && data.website !== "" && !/^https?:\/\//i.test(data.website)) {
@@ -86,8 +110,15 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Resolve or create City ──────────────────────────────────────────
+  // If no city/state provided, use a default
+  if (!data.city || !data.state) {
+    // Use Florida/St. Petersburg as default if not provided
+    data.city = data.city || "St. Petersburg";
+    data.state = data.state || "FL";
+  }
+
   const stateRecord = await prisma.state.findUnique({
-    where: { abbreviation: data.state },
+    where: { abbreviation: data.state.toUpperCase() },
   });
 
   if (!stateRecord) {
@@ -147,6 +178,7 @@ export async function POST(req: NextRequest) {
   const allServiceValues = [
     ...data.carServices,
     ...data.boatServices,
+    ...data.services,
   ].filter((v) => VALID_CATEGORIES.has(v));
 
   if (allServiceValues.length > 0) {
