@@ -11,7 +11,7 @@ import type {
   SerializedAvailableLead,
   SerializedPurchasedLead,
   PaymentMethodData,
-} from "@/components/dashboard/CompanyDashboardApp";
+} from "@/components/dashboard/CompanyApp";
 import type Stripe from "stripe";
 
 export default async function CompanyPage() {
