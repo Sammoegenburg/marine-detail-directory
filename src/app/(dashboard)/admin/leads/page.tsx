@@ -96,7 +96,7 @@ export default async function AdminLeadsPage() {
                       {lead.city.name}, {lead.city.state.abbreviation}
                     </td>
                     <td className="px-4 py-3 text-slate-600">
-                      {boatSizeLabels[lead.boatSize] ?? lead.boatSize}
+                      {lead.boatSize ? (boatSizeLabels[lead.boatSize] ?? lead.boatSize) : (lead.vehicleType ?? "—")}
                     </td>
                     <td className="px-4 py-3">
                       <Badge
