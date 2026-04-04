@@ -3,7 +3,7 @@
 // Reusable glassmorphic multi-step lead intake form
 
 import { useState, useEffect } from "react";
-import { MapPin, Wrench, Anchor, User, CheckCircle2, ChevronLeft, Loader2 } from "lucide-react";
+import { MapPin, Wrench, Car, User, CheckCircle2, ChevronLeft, Loader2, Anchor } from "lucide-react";
 import { BOAT_SIZE_LABELS } from "@/types";
 
 type ServiceOption = { id: string; name: string; slug?: string };
@@ -15,17 +15,33 @@ type Props = {
   services?: ServiceOption[];
 };
 
+type VehicleType = "CAR" | "BOAT";
+
 type FormData = {
+  vehicleType: VehicleType | "";
   zipCode: string;
   state: string;
   serviceId: string;
   boatSize: string;
   boatType: string;
   boatYear: string;
+  vehicleMake: string;
+  vehicleModel: string;
+  vehicleYear: string;
+  vehicleColor: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
 };
+
+const CAR_SERVICE_SLUGS = new Set([
+  "car-full-detail",
+  "car-interior",
+  "car-exterior",
+  "paint-correction",
+  "ceramic-coating",
+  "window-tint",
+]);
 
 const US_STATES = [
   "Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut",
@@ -39,27 +55,33 @@ const US_STATES = [
 ];
 
 const STEPS = [
+  { label: "Vehicle",  Icon: Car },
   { label: "Location", Icon: MapPin },
   { label: "Service",  Icon: Wrench },
-  { label: "Your Boat", Icon: Anchor },
+  { label: "Details",  Icon: Anchor },
   { label: "Contact",  Icon: User },
 ];
 
 export function LeadIntakeForm({ defaultCity, defaultState, defaultService, services: servicesProp }: Props) {
   const [step, setStep] = useState(1);
-  const [services, setServices] = useState<ServiceOption[]>(servicesProp ?? []);
+  const [allServices, setAllServices] = useState<ServiceOption[]>(servicesProp ?? []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormData, string>>>({});
 
   const [form, setForm] = useState<FormData>({
+    vehicleType: "",
     zipCode: "",
     state: defaultState ?? "",
     serviceId: "",
     boatSize: "",
     boatType: "",
     boatYear: "",
+    vehicleMake: "",
+    vehicleModel: "",
+    vehicleYear: "",
+    vehicleColor: "",
     customerName: "",
     customerEmail: "",
     customerPhone: "",
@@ -71,8 +93,7 @@ export function LeadIntakeForm({ defaultCity, defaultState, defaultService, serv
       fetch("/api/services")
         .then((r) => r.json())
         .then((data: ServiceOption[]) => {
-          setServices(data);
-          // Pre-select default service by name match
+          setAllServices(data);
           if (defaultService) {
             const match = data.find(
               (s) => s.name.toLowerCase() === defaultService.toLowerCase() ||
@@ -92,23 +113,35 @@ export function LeadIntakeForm({ defaultCity, defaultState, defaultService, serv
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const filteredServices = form.vehicleType === "CAR"
+    ? allServices.filter((s) => s.slug && CAR_SERVICE_SLUGS.has(s.slug))
+    : allServices.filter((s) => !s.slug || !CAR_SERVICE_SLUGS.has(s.slug));
+
   function update(field: keyof FormData, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
     setFieldErrors((e) => ({ ...e, [field]: undefined }));
   }
 
+  function setVehicleType(type: VehicleType) {
+    setForm((f) => ({ ...f, vehicleType: type, serviceId: "" }));
+    setFieldErrors((e) => ({ ...e, vehicleType: undefined }));
+  }
+
   function validateStep(s: number): boolean {
     const errs: Partial<Record<keyof FormData, string>> = {};
-    if (s === 1 && (!/^\d{5}$/.test(form.zipCode))) {
+    if (s === 1 && !form.vehicleType) {
+      errs.vehicleType = "Please select a vehicle type";
+    }
+    if (s === 2 && !/^\d{5}$/.test(form.zipCode)) {
       errs.zipCode = "Enter a valid 5-digit zip code";
     }
-    if (s === 2 && !form.serviceId) {
+    if (s === 3 && !form.serviceId) {
       errs.serviceId = "Please select a service";
     }
-    if (s === 3 && !form.boatSize) {
+    if (s === 4 && form.vehicleType === "BOAT" && !form.boatSize) {
       errs.boatSize = "Please select a boat size";
     }
-    if (s === 4) {
+    if (s === 5) {
       if (!form.customerName || form.customerName.trim().length < 2)
         errs.customerName = "Name is required";
       if (!form.customerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail))
@@ -121,7 +154,7 @@ export function LeadIntakeForm({ defaultCity, defaultState, defaultService, serv
   }
 
   function nextStep() {
-    if (validateStep(step)) setStep((s) => Math.min(s + 1, 4));
+    if (validateStep(step)) setStep((s) => Math.min(s + 1, 5));
   }
 
   function prevStep() {
@@ -130,23 +163,33 @@ export function LeadIntakeForm({ defaultCity, defaultState, defaultService, serv
   }
 
   async function handleSubmit() {
-    if (!validateStep(4)) return;
+    if (!validateStep(5)) return;
     setIsSubmitting(true);
     setError(null);
     try {
+      const payload: Record<string, unknown> = {
+        customerName: form.customerName.trim(),
+        customerEmail: form.customerEmail.trim(),
+        customerPhone: form.customerPhone.trim(),
+        vehicleType: form.vehicleType,
+        zipCode: form.zipCode,
+        serviceId: form.serviceId,
+      };
+
+      if (form.vehicleType === "BOAT") {
+        payload.boatSize = form.boatSize;
+        if (form.boatType) payload.boatType = form.boatType;
+        if (form.boatYear) payload.boatYear = parseInt(form.boatYear);
+      } else {
+        if (form.vehicleMake) payload.boatMake = form.vehicleMake;
+        if (form.vehicleModel) payload.boatType = form.vehicleModel;
+        if (form.vehicleYear) payload.boatYear = parseInt(form.vehicleYear);
+      }
+
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerName: form.customerName.trim(),
-          customerEmail: form.customerEmail.trim(),
-          customerPhone: form.customerPhone.trim(),
-          boatSize: form.boatSize,
-          boatType: form.boatType || undefined,
-          boatYear: form.boatYear ? parseInt(form.boatYear) : undefined,
-          zipCode: form.zipCode,
-          serviceId: form.serviceId,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const body = await res.json();
@@ -168,7 +211,7 @@ export function LeadIntakeForm({ defaultCity, defaultState, defaultService, serv
         </div>
         <h3 className="text-3xl font-bold tracking-tighter text-[#1d1d1f] mb-3">You&apos;re all set!</h3>
         <p className="text-gray-500 text-lg font-medium max-w-md mx-auto leading-relaxed">
-          Local marine detailing pros will be reaching out to you shortly. Check your email for confirmation.
+          Local detailing pros will be reaching out to you shortly. Check your email for confirmation.
         </p>
       </div>
     );
@@ -212,11 +255,48 @@ export function LeadIntakeForm({ defaultCity, defaultState, defaultService, serv
         })}
       </div>
 
-      {/* Step 1: Location */}
+      {/* Step 1: Vehicle Type */}
       {step === 1 && (
         <div className="space-y-5">
           <div>
-            <h3 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mb-1">Where is your boat?</h3>
+            <h3 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mb-1">What type of vehicle?</h3>
+            <p className="text-gray-500 text-sm font-medium">We&apos;ll match you with the right specialists.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => setVehicleType("CAR")}
+              className={`p-6 rounded-2xl border-2 text-center transition-all flex flex-col items-center gap-3 ${
+                form.vehicleType === "CAR"
+                  ? "border-black bg-black text-white"
+                  : "border-gray-100 bg-gray-50 text-[#1d1d1f] hover:border-gray-300 hover:bg-white"
+              }`}
+            >
+              <Car size={32} />
+              <span className="text-sm font-bold">Car / Truck / SUV</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setVehicleType("BOAT")}
+              className={`p-6 rounded-2xl border-2 text-center transition-all flex flex-col items-center gap-3 ${
+                form.vehicleType === "BOAT"
+                  ? "border-black bg-black text-white"
+                  : "border-gray-100 bg-gray-50 text-[#1d1d1f] hover:border-gray-300 hover:bg-white"
+              }`}
+            >
+              <Anchor size={32} />
+              <span className="text-sm font-bold">Boat / Watercraft</span>
+            </button>
+          </div>
+          {fieldErrors.vehicleType && <p className="text-xs text-red-500">{fieldErrors.vehicleType}</p>}
+        </div>
+      )}
+
+      {/* Step 2: Location */}
+      {step === 2 && (
+        <div className="space-y-5">
+          <div>
+            <h3 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mb-1">Where are you located?</h3>
             <p className="text-gray-500 text-sm font-medium">
               {defaultCity ? `Serving ${defaultCity} — confirm your zip code.` : "We'll match you with pros serving your area."}
             </p>
@@ -252,20 +332,20 @@ export function LeadIntakeForm({ defaultCity, defaultState, defaultService, serv
         </div>
       )}
 
-      {/* Step 2: Service */}
-      {step === 2 && (
+      {/* Step 3: Service */}
+      {step === 3 && (
         <div className="space-y-5">
           <div>
             <h3 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mb-1">What service do you need?</h3>
-            <p className="text-gray-500 text-sm font-medium">Select the service and we'll find the right specialists.</p>
+            <p className="text-gray-500 text-sm font-medium">Select the service and we&apos;ll find the right specialists.</p>
           </div>
-          {services.length === 0 ? (
+          {filteredServices.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-gray-400">
               <Loader2 size={20} className="animate-spin mr-2" /> Loading services...
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {services.map((service) => (
+              {filteredServices.map((service) => (
                 <button
                   key={service.id}
                   type="button"
@@ -285,8 +365,8 @@ export function LeadIntakeForm({ defaultCity, defaultState, defaultService, serv
         </div>
       )}
 
-      {/* Step 3: Boat Details */}
-      {step === 3 && (
+      {/* Step 4: Vehicle Details */}
+      {step === 4 && form.vehicleType === "BOAT" && (
         <div className="space-y-5">
           <div>
             <h3 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mb-1">Tell us about your boat</h3>
@@ -339,8 +419,63 @@ export function LeadIntakeForm({ defaultCity, defaultState, defaultService, serv
         </div>
       )}
 
-      {/* Step 4: Contact */}
-      {step === 4 && (
+      {step === 4 && form.vehicleType === "CAR" && (
+        <div className="space-y-5">
+          <div>
+            <h3 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mb-1">Tell us about your vehicle</h3>
+            <p className="text-gray-500 text-sm font-medium">This helps pros give you accurate quotes.</p>
+          </div>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Make</label>
+                <input
+                  type="text"
+                  placeholder="Toyota, Ford..."
+                  value={form.vehicleMake}
+                  onChange={(e) => update("vehicleMake", e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Model</label>
+                <input
+                  type="text"
+                  placeholder="Camry, F-150..."
+                  value={form.vehicleModel}
+                  onChange={(e) => update("vehicleModel", e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Year</label>
+                <input
+                  type="number"
+                  placeholder="2022"
+                  value={form.vehicleYear}
+                  onChange={(e) => update("vehicleYear", e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Color</label>
+                <input
+                  type="text"
+                  placeholder="White, Black..."
+                  value={form.vehicleColor}
+                  onChange={(e) => update("vehicleColor", e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 5: Contact */}
+      {step === 5 && (
         <div className="space-y-5">
           <div>
             <h3 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mb-1">How can pros reach you?</h3>
@@ -399,7 +534,7 @@ export function LeadIntakeForm({ defaultCity, defaultState, defaultService, serv
             <ChevronLeft size={16} /> Back
           </button>
         )}
-        {step < 4 ? (
+        {step < 5 ? (
           <button
             type="button"
             onClick={nextStep}

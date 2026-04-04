@@ -11,10 +11,10 @@ export function generateStateMetadata(params: {
 }): Metadata {
   const title =
     params.metaTitle ??
-    `Boat Detailing in ${params.stateName} — Find Local Detailers`;
+    `Detailing Services in ${params.stateName} — Find Local Detailers`;
   const description =
     params.metaDesc ??
-    `Find top-rated boat detailing companies across ${params.stateName}. Browse by city, compare services, and get free quotes from verified marine detailers.`;
+    `Find top-rated detailing companies across ${params.stateName}. Browse by city, compare services, and get free quotes from verified car and marine detailers.`;
 
   return {
     title,
@@ -40,10 +40,10 @@ export function generateCityMetadata(params: {
 }): Metadata {
   const title =
     params.metaTitle ??
-    `Boat Detailing in ${params.cityName}, ${params.stateName} — Top Rated Services`;
+    `Detailing Services in ${params.cityName}, ${params.stateName} — Top Rated`;
   const description =
     params.metaDesc ??
-    `Compare ${params.cityName} boat detailing companies. Read reviews, view pricing, and request free quotes from licensed marine detailers in ${params.cityName}, ${params.stateName}.`;
+    `Compare ${params.cityName} detailing companies. Read reviews, view pricing, and request free quotes from licensed car and marine detailers in ${params.cityName}, ${params.stateName}.`;
 
   return {
     title,
@@ -75,7 +75,7 @@ export function generateServicePageMetadata(params: {
     `${params.serviceName} in ${params.cityName}, ${params.stateAbbr} — Get Free Quotes`;
   const description =
     params.metaDesc ??
-    `Find the best ${params.serviceName.toLowerCase()} services in ${params.cityName}, ${params.stateName}. Compare local marine detailers, see reviews, and get instant free quotes.`;
+    `Find the best ${params.serviceName.toLowerCase()} services in ${params.cityName}, ${params.stateName}. Compare local detailers, see reviews, and get instant free quotes.`;
 
   return {
     title,
@@ -99,10 +99,10 @@ export function generateCompanyMetadata(params: {
   description?: string | null;
   averageRating?: number | null;
 }): Metadata {
-  const title = `${params.companyName} — Boat Detailing in ${params.cityName}, ${params.stateName}`;
+  const title = `${params.companyName} — Detailing Services in ${params.cityName}, ${params.stateName}`;
   const description =
     params.description?.slice(0, 160) ??
-    `${params.companyName} offers professional boat detailing services in ${params.cityName}, ${params.stateName}. Request a free quote today.`;
+    `${params.companyName} offers professional detailing services in ${params.cityName}, ${params.stateName}. Request a free quote today.`;
 
   return {
     title,

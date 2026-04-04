@@ -63,7 +63,7 @@ export default async function StateHubPage({ params }: Props) {
 
         <FadeUp>
           <h1 className="text-5xl md:text-[64px] font-bold tracking-tighter text-[#1d1d1f] mb-4 leading-[1.05]">
-            Boat Detailing in {state.name}
+            Detailing Services in {state.name}
           </h1>
           <p className="text-lg md:text-xl text-gray-500 font-medium tracking-tight max-w-2xl leading-relaxed">
             {content}

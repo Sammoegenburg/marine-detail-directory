@@ -34,6 +34,9 @@ const SEARCH_TERMS = [
   "boat detailing",
   "marine detailing",
   "boat cleaning",
+  "car detailing",
+  "auto detailing",
+  "mobile detailing",
 ];
 
 function delay(ms: number) {
@@ -125,7 +128,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("🚢 Starting Google Places import for Florida boat detailers...\n");
+  console.log("🚗🚢 Starting Google Places import for Florida detailers (car + boat)...\n");
 
   // Load all FL cities from DB
   const dbCities = await prisma.city.findMany({
@@ -202,27 +205,6 @@ async function main() {
     // Skip duplicates
     if (existingNames.has(normalizedName)) {
       console.log(`  ↩  Skipping duplicate: "${details.name}"`);
-      skipped++;
-      continue;
-    }
-
-    // Require at least one marine keyword — skip auto/car detailers
-    const name = details.name.toLowerCase();
-    const MARINE_KEYWORDS = [
-      "boat",
-      "marine",
-      "yacht",
-      "hull",
-      "watercraft",
-      "vessel",
-      "nautical",
-      "dock",
-      "marina",
-    ];
-    const hasMarine = MARINE_KEYWORDS.some((kw) => name.includes(kw));
-
-    if (!hasMarine) {
-      console.log(`  ↩  Skipping non-marine: "${details.name}"`);
       skipped++;
       continue;
     }

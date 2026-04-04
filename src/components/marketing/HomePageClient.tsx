@@ -97,7 +97,7 @@ export function HomePageClient({ services, featuredCities }: Props) {
         </FadeUp>
         <FadeUp delay={100}>
           <p className="text-lg md:text-2xl text-gray-500 font-medium tracking-tight mb-10 md:mb-14 max-w-2xl mx-auto px-4">
-            Tell us about your boat. Local pros compete for your business. You pick the best.
+            Connect instantly with top-tier, vetted detailing professionals near you.
           </p>
         </FadeUp>
         <FadeUp delay={200} className="w-full">
@@ -123,12 +123,12 @@ export function HomePageClient({ services, featuredCities }: Props) {
         <div className="max-w-[1100px] mx-auto">
           <FadeUp>
             <h2 className="text-3xl md:text-5xl lg:text-[56px] font-bold tracking-tighter mb-12 md:mb-20 text-center leading-tight">
-              Expert marine care,<br className="hidden md:block" /> completely simplified.
+              Expert detailing care,<br className="hidden md:block" /> completely simplified.
             </h2>
           </FadeUp>
           <div className="grid md:grid-cols-3 gap-10 md:gap-16">
             {[
-              { icon: <MapPin size={32} />, title: "Dockside Service", desc: "We match you with top-rated professionals actively servicing your exact marina." },
+              { icon: <MapPin size={32} />, title: "Local Pros", desc: "We match you with top-rated professionals actively servicing your area." },
               { icon: <Clock size={32} />, title: "Transparent Pricing", desc: "Submit one request. Get exact quotes and availability from local experts in minutes." },
               { icon: <ShieldCheck size={32} />, title: "Verified Excellence", desc: "Every detailer on our network is rigorously vetted, reviewed, and fully insured." },
             ].map((feature, i) => (
@@ -150,7 +150,7 @@ export function HomePageClient({ services, featuredCities }: Props) {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-12 gap-4 px-2 md:px-4">
             <FadeUp>
               <h2 className="text-3xl md:text-5xl lg:text-[48px] font-bold tracking-tighter">We serve these areas</h2>
-              <p className="text-gray-500 text-lg md:text-xl font-medium mt-2">Marine detailing pros available in your area.</p>
+              <p className="text-gray-500 text-lg md:text-xl font-medium mt-2">Detailing pros available in your area.</p>
             </FadeUp>
             <FadeUp delay={100} className="hidden md:block">
               <Link href="/florida" className="text-black font-bold flex items-center gap-2 hover:gap-3 transition-all">
@@ -188,7 +188,7 @@ export function HomePageClient({ services, featuredCities }: Props) {
                 Stop chasing leads.<br className="hidden md:block" /> Let them find you.
               </h2>
               <p className="text-gray-400 text-lg md:text-2xl font-medium tracking-tight mb-8 md:mb-10 max-w-md mx-auto lg:mx-0 leading-relaxed">
-                Join the fastest-growing network of elite marine professionals. Claim your free profile, get instant dockside job alerts, and only pay for the leads you want.
+                Join the fastest-growing network of elite detailing professionals. Claim your free profile, get instant job alerts, and only pay for the leads you want.
               </p>
               <Link href="/register" className="inline-block w-full md:w-auto bg-white text-black px-8 py-4 rounded-xl md:rounded-full font-bold text-lg hover:bg-gray-200 md:hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)] text-center">
                 List your business free
@@ -239,7 +239,7 @@ export function HomePageClient({ services, featuredCities }: Props) {
               <img src="/images/logo.png" alt="Marine Detail Directory" className="h-6 w-auto" />
               <div className="text-xl md:text-2xl font-bold tracking-tight text-black">MarineDirectory.</div>
             </div>
-            <p className="text-gray-500 font-medium max-w-sm text-base md:text-lg">The smartest way to connect with elite local detailing professionals.</p>
+            <p className="text-gray-500 font-medium max-w-sm text-base md:text-lg">The smartest way to connect with elite local car and marine detailing professionals.</p>
           </div>
           <div>
             <h4 className="font-bold text-black mb-4 md:mb-6 tracking-tight text-base md:text-lg">Platform</h4>

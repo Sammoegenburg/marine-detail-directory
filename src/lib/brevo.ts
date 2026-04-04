@@ -48,7 +48,8 @@ type LeadNotificationParams = {
   cityName: string;
   stateName: string;
   serviceName: string;
-  boatSize: string;
+  vehicleType: string;
+  boatSize?: string;
   leadPrice: number;
 };
 
@@ -67,12 +68,13 @@ export async function sendNewLeadNotification(
     companies.map((company) =>
       sendEmail({
         to: [{ email: company.email, name: company.name }],
-        subject: `🎯 New ${lead.serviceName} Lead in ${lead.cityName} — Unlock for $${lead.leadPrice.toFixed(2)}`,
+        subject: `🎯 New ${lead.vehicleType === "CAR" ? "Car" : "Boat"} Detailing Lead in ${lead.cityName} — Unlock for $${lead.leadPrice.toFixed(2)}`,
         htmlContent: newLeadEmailHtml({
           companyName: company.name,
           cityName: lead.cityName,
           stateName: lead.stateName,
           serviceName: lead.serviceName,
+          vehicleType: lead.vehicleType,
           boatSize: lead.boatSize,
           leadPrice: lead.leadPrice,
           leadId: lead.leadId,

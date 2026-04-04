@@ -18,7 +18,10 @@ export type BoatSize =
   | "THIRTY_TO_40FT"
   | "OVER_40FT";
 
+export type VehicleType = "CAR" | "BOAT";
+
 export type ServiceCategory =
+  // Boat
   | "FULL_DETAIL"
   | "HULL_CLEANING"
   | "INTERIOR_DETAIL"
@@ -26,7 +29,14 @@ export type ServiceCategory =
   | "WAXING_POLISHING"
   | "BOTTOM_PAINT"
   | "CANVAS_CLEANING"
-  | "BRIGHTWORK";
+  | "BRIGHTWORK"
+  // Car
+  | "CAR_FULL_DETAIL"
+  | "CAR_INTERIOR"
+  | "CAR_EXTERIOR"
+  | "PAINT_CORRECTION"
+  | "CERAMIC_COATING"
+  | "WINDOW_TINT";
 
 export type ClaimStatus = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -46,6 +56,12 @@ export const SERVICE_LABELS: Record<ServiceCategory, string> = {
   BOTTOM_PAINT: "Bottom Paint",
   CANVAS_CLEANING: "Canvas Cleaning",
   BRIGHTWORK: "Brightwork",
+  CAR_FULL_DETAIL: "Car Full Detail",
+  CAR_INTERIOR: "Interior Detail",
+  CAR_EXTERIOR: "Exterior Wash",
+  PAINT_CORRECTION: "Paint Correction",
+  CERAMIC_COATING: "Ceramic Coating",
+  WINDOW_TINT: "Window Tint",
 };
 
 export type PublicCompany = {
@@ -71,7 +87,8 @@ export type LeadFormData = {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
-  boatSize: BoatSize;
+  vehicleType: VehicleType;
+  boatSize?: BoatSize;
   boatType?: string;
   boatYear?: number;
   boatMake?: string;

@@ -8,7 +8,8 @@ export type NewLeadEmailParams = {
   cityName: string;
   stateName: string;
   serviceName: string;
-  boatSize: string;
+  vehicleType: string;
+  boatSize?: string;
   leadPrice: number;
   leadId: string;
   baseUrl: string;
@@ -74,7 +75,7 @@ function emailWrapper(content: string): string {
 }
 
 export function newLeadEmailHtml(params: NewLeadEmailParams): string {
-  const { companyName, cityName, stateName, serviceName, boatSize, leadPrice, leadId, baseUrl } = params;
+  const { companyName, cityName, stateName, serviceName, vehicleType, boatSize, leadPrice, leadId, baseUrl } = params;
 
   const boatSizeLabel: Record<string, string> = {
     UNDER_20FT: "Under 20 ft",
@@ -82,6 +83,8 @@ export function newLeadEmailHtml(params: NewLeadEmailParams): string {
     THIRTY_TO_40FT: "30–40 ft",
     OVER_40FT: "Over 40 ft",
   };
+
+  const vehicleLabel = vehicleType === "CAR" ? "Car / Truck / SUV" : boatSize ? boatSizeLabel[boatSize] ?? boatSize : "Boat / Watercraft";
 
   const viewUrl = `${baseUrl}/company/leads`;
 
@@ -102,8 +105,8 @@ export function newLeadEmailHtml(params: NewLeadEmailParams): string {
               <td style="padding:6px 0;color:#0f172a;font-size:14px;font-weight:600;">${serviceName}</td>
             </tr>
             <tr>
-              <td style="padding:6px 0;color:#64748b;font-size:13px;">Boat Size</td>
-              <td style="padding:6px 0;color:#0f172a;font-size:14px;font-weight:600;">${boatSizeLabel[boatSize] ?? boatSize}</td>
+              <td style="padding:6px 0;color:#64748b;font-size:13px;">Vehicle</td>
+              <td style="padding:6px 0;color:#0f172a;font-size:14px;font-weight:600;">${vehicleLabel}</td>
             </tr>
             <tr>
               <td style="padding:6px 0;color:#64748b;font-size:13px;">Location</td>

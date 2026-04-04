@@ -55,12 +55,12 @@ export default async function CityHubPage({ params }: Props) {
 
   const faqs = [
     {
-      q: `How does marine detailing work in ${city.name}?`,
-      a: `Submit your boat details and location. Our network of verified pros in ${city.name} will review your request and reach out with quotes. You choose the best fit.`,
+      q: `How does detailing work in ${city.name}?`,
+      a: `Submit your vehicle details and location. Our network of verified pros in ${city.name} will review your request and reach out with quotes. You choose the best fit.`,
     },
     {
-      q: "How much does boat detailing cost?",
-      a: "Pricing varies by boat size, service type, and condition. Pros will provide exact quotes after reviewing your request — no surprises.",
+      q: "How much does detailing cost?",
+      a: "Pricing varies by vehicle size, service type, and condition. Pros will provide exact quotes after reviewing your request — no surprises.",
     },
     {
       q: "Are the pros vetted and insured?",
@@ -75,7 +75,7 @@ export default async function CityHubPage({ params }: Props) {
   return (
     <>
       <LocalBusinessSchema
-        name={`Boat Detailing in ${city.name}`}
+        name={`Detailing Services in ${city.name}`}
         url={`${process.env.NEXT_PUBLIC_BASE_URL}/${stateSlug}/${citySlug}`}
         city={city.name}
         state={city.state.abbreviation}
@@ -97,10 +97,10 @@ export default async function CityHubPage({ params }: Props) {
 
           <FadeUp>
             <h1 className="text-5xl md:text-[64px] font-bold tracking-tighter text-[#1d1d1f] mb-4 leading-[1.05]">
-              Get Boat Detailing Quotes in {city.name}, {city.state.abbreviation}
+              Get Detailing Quotes in {city.name}, {city.state.abbreviation}
             </h1>
             <p className="text-lg md:text-xl text-gray-500 font-medium tracking-tight max-w-2xl leading-relaxed mb-8">
-              Tell us about your boat. Local pros compete for your business. Free quotes, no commitment.
+              Tell us about your vehicle. Local pros compete for your business. Free quotes, no commitment.
             </p>
           </FadeUp>
 
@@ -158,12 +158,12 @@ export default async function CityHubPage({ params }: Props) {
         <section className="py-16 md:py-20 px-6 bg-white rounded-[2rem] md:rounded-[3rem] max-w-[1400px] mx-4 md:mx-auto shadow-sm border border-gray-100 mb-16 md:mb-24">
           <FadeUp>
             <h2 className="text-3xl md:text-4xl font-bold tracking-tighter text-center mb-12">
-              Why use MarineDirectory in {city.name}?
+              Why use MarineDirectory for detailing in {city.name}?
             </h2>
           </FadeUp>
           <div className="grid md:grid-cols-3 gap-10 md:gap-16 max-w-[1100px] mx-auto">
             {[
-              { icon: <MapPin size={28} />, title: "Local Experts", desc: `Pros who actually service ${city.name} marinas — no out-of-area callbacks.` },
+              { icon: <MapPin size={28} />, title: "Local Experts", desc: `Pros who actually service ${city.name} — no out-of-area callbacks.` },
               { icon: <Clock size={28} />, title: "Fast Response", desc: "Most customers hear back from multiple pros within hours of submitting." },
               { icon: <ShieldCheck size={28} />, title: "Zero Risk", desc: "Free to submit. No commitment. You choose when and if you hire." },
             ].map((item, i) => (

@@ -41,7 +41,13 @@ enum BoatSize {
   OVER_40FT
 }
 
+enum VehicleType {
+  CAR
+  BOAT
+}
+
 enum ServiceCategory {
+  // Boat
   FULL_DETAIL
   HULL_CLEANING
   INTERIOR_DETAIL
@@ -50,6 +56,13 @@ enum ServiceCategory {
   BOTTOM_PAINT
   CANVAS_CLEANING
   BRIGHTWORK
+  // Car
+  CAR_FULL_DETAIL
+  CAR_INTERIOR
+  CAR_EXTERIOR
+  PAINT_CORRECTION
+  CERAMIC_COATING
+  WINDOW_TINT
 }
 
 enum ClaimStatus {
@@ -316,7 +329,8 @@ model Lead {
   customerName  String
   customerEmail String
   customerPhone String
-  boatSize      BoatSize
+  vehicleType   VehicleType @default(BOAT)
+  boatSize      BoatSize?
   boatType      String?
   boatYear      Int?
   boatMake      String?

@@ -88,11 +88,11 @@ export default async function ServicePage({ params }: Props) {
   const faqs = [
     {
       q: `How does ${service.name.toLowerCase()} work in ${city.name}?`,
-      a: `Submit your boat details and we'll match you with ${service.name.toLowerCase()} specialists in ${city.name}. They'll review your request and reach out with exact quotes.`,
+      a: `Submit your vehicle details and we'll match you with ${service.name.toLowerCase()} specialists in ${city.name}. They'll review your request and reach out with exact quotes.`,
     },
     {
       q: `How much does ${service.name.toLowerCase()} cost?`,
-      a: "Pricing depends on boat size, condition, and the specific work needed. Pros give exact quotes after reviewing your request.",
+      a: "Pricing depends on vehicle size, condition, and the specific work needed. Pros give exact quotes after reviewing your request.",
     },
     {
       q: "Are the pros insured and verified?",
@@ -178,7 +178,7 @@ export default async function ServicePage({ params }: Props) {
           </FadeUp>
           <div className="grid md:grid-cols-3 gap-10 md:gap-16 max-w-[1100px] mx-auto">
             {[
-              { icon: <MapPin size={28} />, title: "Local Specialists", desc: `Pros who specialize in ${service.name.toLowerCase()} and actively service ${city.name} marinas.` },
+              { icon: <MapPin size={28} />, title: "Local Specialists", desc: `Pros who specialize in ${service.name.toLowerCase()} and actively serve ${city.name}.` },
               { icon: <Clock size={28} />, title: "Fast Quotes", desc: "Most customers hear back from multiple specialists within hours." },
               { icon: <ShieldCheck size={28} />, title: "Fully Insured", desc: "Every pro is vetted and insured. Zero risk to you." },
             ].map((item, i) => (

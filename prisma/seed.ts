@@ -82,6 +82,55 @@ const SERVICES = [
       "Varnishing, oiling, and polishing of all stainless steel, chrome, and bright metal fittings. Prevents corrosion and maintains showroom appearance.",
     baseLeadPrice: 14,
   },
+  // Car services
+  {
+    category: "CAR_FULL_DETAIL" as const,
+    name: "Car Full Detail",
+    slug: "car-full-detail",
+    description:
+      "Complete interior and exterior detailing for cars, trucks, and SUVs. Includes hand wash, clay bar, interior vacuum, wipe-down, and wax application.",
+    baseLeadPrice: 18,
+  },
+  {
+    category: "CAR_INTERIOR" as const,
+    name: "Interior Detail",
+    slug: "car-interior",
+    description:
+      "Deep-clean of all interior surfaces including seats, carpets, dashboard, door panels, and glass. Odor elimination and fabric protection included.",
+    baseLeadPrice: 15,
+  },
+  {
+    category: "CAR_EXTERIOR" as const,
+    name: "Exterior Wash & Wax",
+    slug: "car-exterior",
+    description:
+      "Professional hand wash, clay bar treatment, and wax application to protect and restore your vehicle's exterior finish.",
+    baseLeadPrice: 12,
+  },
+  {
+    category: "PAINT_CORRECTION" as const,
+    name: "Paint Correction",
+    slug: "paint-correction",
+    description:
+      "Multi-stage machine polishing to remove swirl marks, scratches, water spots, and oxidation. Restores depth and gloss to automotive paint.",
+    baseLeadPrice: 22,
+  },
+  {
+    category: "CERAMIC_COATING" as const,
+    name: "Ceramic Coating",
+    slug: "ceramic-coating",
+    description:
+      "Professional-grade ceramic coating application for long-lasting paint protection, hydrophobic properties, and showroom shine. Includes paint decontamination prep.",
+    baseLeadPrice: 25,
+  },
+  {
+    category: "WINDOW_TINT" as const,
+    name: "Window Tint",
+    slug: "window-tint",
+    description:
+      "Professional window film installation for UV protection, heat rejection, and privacy. Available in multiple shade percentages.",
+    baseLeadPrice: 16,
+  },
 ];
 
 const COASTAL_STATES = [
