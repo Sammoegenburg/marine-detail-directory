@@ -1,6 +1,7 @@
 // src/components/layout/Navbar.tsx
 
 import Link from "next/link";
+import { Handshake } from "lucide-react";
 import { auth } from "@/lib/auth";
 import {
   DropdownMenu,
@@ -16,19 +17,23 @@ export async function Navbar() {
   const userRole = (session?.user as { role?: string } | undefined)?.role;
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-xl border-b border-gray-200/50 shadow-sm">
+    <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-xl border-b border-gray-200/50 shadow-sm">
       <div className="max-w-[1200px] mx-auto flex h-16 items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2 group">
-          <img src="/images/logo.png" alt="Marine Detail Directory" className="h-8 w-auto" />
-          <span className="text-xl font-bold tracking-tight text-[#1d1d1f]">MarineDirectory.</span>
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-[#ff385c] flex items-center justify-center">
+            <Handshake size={18} className="text-white" strokeWidth={2.5} />
+          </div>
+          <span className="text-[22px] font-black tracking-tight italic uppercase text-[#1d1d1f]">
+            Detail<span className="text-[#ff385c]">Hub</span>
+          </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-8 text-[14px] font-semibold tracking-wide">
-          <Link href="/#quote-form" className="text-gray-600 hover:text-black transition-colors">
-            Get Free Quotes
+        <nav className="hidden md:flex items-center gap-7 text-[13px] font-semibold tracking-wide">
+          <Link href="/#how-it-works" className="text-gray-600 hover:text-black transition-colors">
+            How it works
           </Link>
-          <Link href="/#for-detailers" className="text-gray-600 hover:text-black transition-colors">
-            For Pros
+          <Link href="/#professionals" className="text-gray-600 hover:text-black transition-colors">
+            For Professionals
           </Link>
         </nav>
 
@@ -37,7 +42,7 @@ export async function Navbar() {
             <DropdownMenu>
               <DropdownMenuTrigger>
                 <Avatar className="h-9 w-9 cursor-pointer ring-2 ring-gray-100 hover:ring-gray-300 transition-all">
-                  <AvatarFallback className="bg-[#1d1d1f] text-white font-bold text-sm">
+                  <AvatarFallback className="bg-[#ff385c] text-white font-bold text-sm">
                     {session.user.name?.charAt(0).toUpperCase() ?? "U"}
                   </AvatarFallback>
                 </Avatar>
@@ -61,15 +66,15 @@ export async function Navbar() {
             <>
               <Link
                 href="/login"
-                className="text-[14px] font-semibold text-gray-600 hover:text-black transition-colors"
+                className="text-[13px] font-semibold text-gray-600 hover:text-black transition-colors"
               >
-                Sign in
+                Sign In
               </Link>
               <Link
                 href="/register"
-                className="bg-black text-white px-5 py-2 rounded-full text-[14px] font-semibold hover:bg-gray-800 transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5"
+                className="bg-[#ff385c] text-white px-5 py-2 rounded-full text-[13px] font-bold hover:opacity-90 transition-all shadow-sm"
               >
-                For Pros
+                List Your Company
               </Link>
             </>
           )}
