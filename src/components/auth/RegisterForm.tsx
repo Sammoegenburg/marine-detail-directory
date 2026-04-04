@@ -66,7 +66,7 @@ export function RegisterForm({ claimSlug, claimCompany }: Props) {
         router.push(data.redirectUrl);
       } else {
         // Fresh registration — go to onboarding wizard
-        router.push("/login?registered=true&next=/company/onboarding");
+        router.push("/login?registered=true");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
