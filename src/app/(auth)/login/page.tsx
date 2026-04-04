@@ -1,10 +1,10 @@
-// src/app/(auth)/login/page.tsx
-
 "use client";
+
+// src/app/(auth)/login/page.tsx
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,9 @@ import { Ship, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next");
+  const registered = searchParams.get("registered") === "true";
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -31,8 +34,25 @@ export default function LoginPage() {
     if (result?.error) {
       setError("Invalid email or password");
       setIsLoading(false);
-    } else {
-      router.push("/company");
+      return;
+    }
+
+    // Fetch session to determine role and redirect accordingly
+    try {
+      const sessionRes = await fetch("/api/auth/session");
+      const session = await sessionRes.json();
+      const role = session?.user?.role;
+
+      if (role === "ADMIN") {
+        router.push("/admin");
+      } else if (nextPath) {
+        router.push(nextPath);
+      } else {
+        // Company users: go to dashboard (which auto-redirects to onboarding if needed)
+        router.push("/company");
+      }
+    } catch {
+      router.push(nextPath ?? "/company");
     }
   }
 
@@ -48,6 +68,11 @@ export default function LoginPage() {
             <span className="text-xl font-bold tracking-tight text-[#1d1d1f]">MarineDirectory.</span>
           </Link>
           <h1 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mt-6">Sign in to your account</h1>
+          {registered && (
+            <p className="text-green-600 text-sm mt-2 font-medium bg-green-50 rounded-xl px-3 py-2">
+              Account created! Sign in to continue setup.
+            </p>
+          )}
           <p className="text-gray-500 text-sm mt-1 font-medium">
             Don&apos;t have an account?{" "}
             <Link href="/register" className="text-black font-semibold hover:underline">Register</Link>

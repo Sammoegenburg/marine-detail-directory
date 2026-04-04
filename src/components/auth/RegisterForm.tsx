@@ -62,9 +62,11 @@ export function RegisterForm({ claimSlug, claimCompany }: Props) {
       const data = await res.json();
 
       if (data.redirectUrl) {
+        // Claim flow — company already linked, go to dashboard
         router.push(data.redirectUrl);
       } else {
-        router.push("/login?registered=true");
+        // Fresh registration — go to onboarding wizard
+        router.push("/login?registered=true&next=/company/onboarding");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
