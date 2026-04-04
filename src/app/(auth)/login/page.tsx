@@ -11,11 +11,26 @@ import {
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Brand styles ─────────────────────────────────────────────────────────────
+
+function TypographyStyle() {
+  return (
+    <style dangerouslySetInnerHTML={{ __html: `
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+      :root { --font-main: 'Inter', sans-serif; --brand-red: #ff385c; }
+      .auth-root { font-family: var(--font-main); -webkit-font-smoothing: antialiased; }
+      .uber-shadow { box-shadow: 0 40px 100px -20px rgba(0,0,0,0.12), 0 20px 50px -20px rgba(0,0,0,0.08); }
+      .input-focus:focus-within { border-color: #000000; box-shadow: 0 0 0 2px rgba(0,0,0,0.05); }
+      .auth-input::placeholder { color: #CBD5E1; font-weight: 500; }
+    `}} />
+  );
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type View = 'login' | 'register' | 'forgot';
 
-// ─── Animation preset ────────────────────────────────────────────────────────
+// ─── Animation preset ─────────────────────────────────────────────────────────
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -24,38 +39,57 @@ const fadeInUp = {
   transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
 };
 
-// ─── Shared input wrapper ────────────────────────────────────────────────────
+// ─── Shared input wrapper ──────────────────────────────────────────────────────
 
 function Field({
+  label,
   icon,
   children,
 }: {
+  label: string;
   icon: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex items-center border border-gray-200 rounded-xl bg-white focus-within:border-black focus-within:ring-2 focus-within:ring-black/5 transition-all">
-      <span className="pl-4 text-gray-400 shrink-0">{icon}</span>
-      {children}
+    <div className="space-y-1">
+      <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest pl-1">{label}</label>
+      <div className="relative flex items-center border border-gray-200 rounded-xl bg-white input-focus transition-all">
+        <span className="pl-4 text-gray-400 shrink-0">{icon}</span>
+        {children}
+      </div>
     </div>
   );
 }
 
 function inputClass() {
-  return 'w-full px-3 py-3.5 bg-transparent text-sm font-medium text-gray-900 placeholder-gray-300 outline-none';
+  return 'auth-input w-full px-3 py-3.5 bg-transparent text-sm font-medium text-gray-900 placeholder-[#CBD5E1] outline-none';
 }
 
-// ─── Error banner ─────────────────────────────────────────────────────────────
+// ─── Error banner ──────────────────────────────────────────────────────────────
 
 function ErrorBanner({ message }: { message: string }) {
   return (
-    <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5 font-medium">
+    <p className="text-[11px] font-black uppercase tracking-widest text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
       {message}
     </p>
   );
 }
 
-// ─── Login view ───────────────────────────────────────────────────────────────
+// ─── Primary button ────────────────────────────────────────────────────────────
+
+function PrimaryButton({ loading, loadingText, children }: { loading: boolean; loadingText: string; children: React.ReactNode }) {
+  return (
+    <button
+      type="submit"
+      disabled={loading}
+      className="w-full flex items-center justify-center gap-2 bg-black text-white rounded-full py-3.5 text-[11px] font-black uppercase tracking-widest hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-60"
+    >
+      {loading ? <><Loader2 size={14} className="animate-spin" /> {loadingText}</> : <>{children} <ArrowRight size={14} /></>}
+    </button>
+  );
+}
+
+// ─── Login view ────────────────────────────────────────────────────────────────
 
 function LoginView({ onSwitch }: { onSwitch: (v: View) => void }) {
   const router = useRouter();
@@ -81,7 +115,7 @@ function LoginView({ onSwitch }: { onSwitch: (v: View) => void }) {
     });
 
     if (result?.error) {
-      setError('Invalid email or password. Please try again.');
+      setError('Invalid credentials — access denied');
       setLoading(false);
       return;
     }
@@ -101,27 +135,35 @@ function LoginView({ onSwitch }: { onSwitch: (v: View) => void }) {
 
   return (
     <motion.div key="login" {...fadeInUp} className="w-full">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Welcome back</h1>
-        <p className="text-sm text-gray-500 mt-1 font-medium">Sign in to your DetailHub account</p>
+      <div className="mb-7">
+        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">
+          SECURE CREDENTIALS REQUIRED FOR ENTRY
+        </p>
+        <h1 className="text-3xl font-black tracking-tighter text-black uppercase">
+          ACCESS DASHBOARD
+        </h1>
       </div>
 
       {registered && (
-        <p className="text-sm text-green-700 bg-green-50 border border-green-100 rounded-xl px-4 py-2.5 font-medium mb-4 text-center">
-          Account created! Sign in to continue setup.
-        </p>
+        <div className="mb-4 px-4 py-3 bg-green-50 border border-green-100 rounded-xl">
+          <p className="text-[10px] font-black uppercase tracking-widest text-green-700">
+            CREDENTIALS ESTABLISHED — SIGN IN TO CONTINUE
+          </p>
+        </div>
       )}
       {reset && (
-        <p className="text-sm text-green-700 bg-green-50 border border-green-100 rounded-xl px-4 py-2.5 font-medium mb-4 text-center">
-          Password updated! Sign in with your new password.
-        </p>
+        <div className="mb-4 px-4 py-3 bg-green-50 border border-green-100 rounded-xl">
+          <p className="text-[10px] font-black uppercase tracking-widest text-green-700">
+            PASSWORD UPDATED — SIGN IN WITH NEW CREDENTIALS
+          </p>
+        </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <Field icon={<Mail size={16} />}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Field label="EMAIL ADDRESS" icon={<Mail size={15} />}>
           <input
             type="email"
-            placeholder="Email address"
+            placeholder="operator@company.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -130,10 +172,10 @@ function LoginView({ onSwitch }: { onSwitch: (v: View) => void }) {
           />
         </Field>
 
-        <Field icon={<Lock size={16} />}>
+        <Field label="PASSWORD" icon={<Lock size={15} />}>
           <input
             type="password"
-            placeholder="Password"
+            placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -144,34 +186,35 @@ function LoginView({ onSwitch }: { onSwitch: (v: View) => void }) {
 
         {error && <ErrorBanner message={error} />}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-2 bg-black text-white rounded-full py-3.5 text-sm font-semibold hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-60"
-        >
-          {loading ? <><Loader2 size={16} className="animate-spin" /> Signing in...</> : <>Sign In <ArrowRight size={16} /></>}
-        </button>
+        <PrimaryButton loading={loading} loadingText="AUTHENTICATING...">
+          ACCESS DASHBOARD
+        </PrimaryButton>
       </form>
 
-      <div className="mt-4 text-center space-y-2">
+      <div className="mt-5 space-y-3">
         <button
           onClick={() => onSwitch('forgot')}
-          className="text-xs text-gray-500 hover:text-gray-900 font-medium transition-colors"
+          className="block w-full text-center text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
         >
-          Forgot password?
+          FORGOT PASSWORD?
         </button>
-        <p className="text-xs text-gray-400 font-medium">
-          Don&apos;t have an account?{' '}
-          <button onClick={() => onSwitch('register')} className="text-gray-900 font-semibold hover:underline">
-            Create one
-          </button>
-        </p>
+        <div className="border-t border-gray-100 pt-3 text-center">
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+            NEW TO THE NETWORK?{' '}
+            <button
+              onClick={() => onSwitch('register')}
+              className="text-black hover:underline"
+            >
+              JOIN THE NETWORK
+            </button>
+          </p>
+        </div>
       </div>
     </motion.div>
   );
 }
 
-// ─── Register view ────────────────────────────────────────────────────────────
+// ─── Register view ─────────────────────────────────────────────────────────────
 
 type Specialization = 'boats' | 'cars' | 'both';
 
@@ -200,11 +243,11 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
     setError(null);
 
     if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match.');
+      setError('PASSWORDS DO NOT MATCH');
       return;
     }
     if (form.password.length < 8) {
-      setError('Password must be at least 8 characters.');
+      setError('PASSWORD MUST BE AT LEAST 8 CHARACTERS');
       return;
     }
 
@@ -228,7 +271,7 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error ?? 'Registration failed. Please try again.');
+        setError((data.error ?? 'REGISTRATION FAILED').toUpperCase());
         setLoading(false);
         return;
       }
@@ -241,36 +284,39 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
       });
 
       if (signInResult?.error) {
-        // Registration succeeded but auto-login failed — redirect to login
         router.push('/login?registered=true');
         return;
       }
 
       router.push('/company');
     } catch {
-      setError('Something went wrong. Please try again.');
+      setError('SYSTEM ERROR — PLEASE TRY AGAIN');
       setLoading(false);
     }
   }
 
   const specializationOptions: { value: Specialization; label: string; icon: React.ReactNode }[] = [
-    { value: 'boats', label: 'Boats', icon: <Ship size={16} /> },
-    { value: 'cars', label: 'Cars', icon: <Car size={16} /> },
-    { value: 'both', label: 'Both', icon: <Layers size={16} /> },
+    { value: 'boats', label: 'BOATS', icon: <Ship size={15} /> },
+    { value: 'cars', label: 'CARS', icon: <Car size={15} /> },
+    { value: 'both', label: 'BOTH', icon: <Layers size={15} /> },
   ];
 
   return (
     <motion.div key="register" {...fadeInUp} className="w-full">
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Create your account</h1>
-        <p className="text-sm text-gray-500 mt-1 font-medium">Get your business listed on DetailHub</p>
+      <div className="mb-7">
+        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">
+          REGISTER YOUR PROFESSIONAL CREDENTIALS
+        </p>
+        <h1 className="text-3xl font-black tracking-tighter text-black uppercase">
+          JOIN THE NETWORK
+        </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <Field icon={<Building2 size={16} />}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Field label="COMPANY NAME" icon={<Building2 size={15} />}>
           <input
             type="text"
-            placeholder="Company Name"
+            placeholder="Your Company LLC"
             value={form.companyName}
             onChange={(e) => update('companyName', e.target.value)}
             required
@@ -278,20 +324,20 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
           />
         </Field>
 
-        <Field icon={<Globe size={16} />}>
+        <Field label="WEBSITE URL (OPTIONAL)" icon={<Globe size={15} />}>
           <input
             type="url"
-            placeholder="Website URL (optional)"
+            placeholder="https://yoursite.com"
             value={form.website}
             onChange={(e) => update('website', e.target.value)}
             className={inputClass()}
           />
         </Field>
 
-        <Field icon={<Mail size={16} />}>
+        <Field label="EMAIL ADDRESS" icon={<Mail size={15} />}>
           <input
             type="email"
-            placeholder="Email Address"
+            placeholder="operator@company.com"
             value={form.email}
             onChange={(e) => update('email', e.target.value)}
             required
@@ -300,39 +346,39 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
           />
         </Field>
 
-        <Field icon={<Phone size={16} />}>
+        <Field label="PHONE (OPTIONAL)" icon={<Phone size={15} />}>
           <input
             type="tel"
-            placeholder="Phone Number (optional)"
+            placeholder="+1 (555) 000-0000"
             value={form.phone}
             onChange={(e) => update('phone', e.target.value)}
             className={inputClass()}
           />
         </Field>
 
-        <Field icon={<span className="text-xs font-bold text-gray-400 pl-0.5">📍</span>}>
+        <Field label="HOME BASE — CITY, STATE" icon={<span className="text-[11px] font-black text-gray-400">📍</span>}>
           <input
             type="text"
-            placeholder="Home Base (e.g. Miami, FL)"
+            placeholder="Miami, FL"
             value={form.homeBase}
             onChange={(e) => update('homeBase', e.target.value)}
             className={inputClass()}
           />
         </Field>
 
-        {/* Specialization picker */}
-        <div>
-          <p className="text-xs font-semibold text-gray-500 mb-2 pl-1">I specialize in:</p>
+        {/* Specialization */}
+        <div className="space-y-2">
+          <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest pl-1">SPECIALIZATION</p>
           <div className="grid grid-cols-3 gap-2">
             {specializationOptions.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => setSpecialization(opt.value)}
-                className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border text-xs font-semibold transition-all ${
+                className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${
                   specialization === opt.value
                     ? 'border-black bg-black text-white'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-400'
+                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-400'
                 }`}
               >
                 {opt.icon}
@@ -342,10 +388,10 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
           </div>
         </div>
 
-        <Field icon={<Lock size={16} />}>
+        <Field label="PASSWORD (MIN 8 CHARS)" icon={<Lock size={15} />}>
           <input
             type="password"
-            placeholder="Password (min 8 chars)"
+            placeholder="••••••••"
             value={form.password}
             onChange={(e) => update('password', e.target.value)}
             required
@@ -354,10 +400,10 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
           />
         </Field>
 
-        <Field icon={<Lock size={16} />}>
+        <Field label="CONFIRM PASSWORD" icon={<Lock size={15} />}>
           <input
             type="password"
-            placeholder="Confirm Password"
+            placeholder="••••••••"
             value={form.confirmPassword}
             onChange={(e) => update('confirmPassword', e.target.value)}
             required
@@ -368,26 +414,24 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
 
         {error && <ErrorBanner message={error} />}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-2 bg-black text-white rounded-full py-3.5 text-sm font-semibold hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-60"
-        >
-          {loading ? <><Loader2 size={16} className="animate-spin" /> Creating account...</> : <>Create Account <ArrowRight size={16} /></>}
-        </button>
+        <PrimaryButton loading={loading} loadingText="REGISTERING...">
+          JOIN THE NETWORK
+        </PrimaryButton>
       </form>
 
-      <p className="mt-4 text-center text-xs text-gray-400 font-medium">
-        Already have an account?{' '}
-        <button onClick={() => onSwitch('login')} className="text-gray-900 font-semibold hover:underline">
-          Sign in
-        </button>
-      </p>
+      <div className="mt-5 border-t border-gray-100 pt-3 text-center">
+        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+          ALREADY REGISTERED?{' '}
+          <button onClick={() => onSwitch('login')} className="text-black hover:underline">
+            ACCESS DASHBOARD
+          </button>
+        </p>
+      </div>
     </motion.div>
   );
 }
 
-// ─── Forgot password view ─────────────────────────────────────────────────────
+// ─── Forgot password view ──────────────────────────────────────────────────────
 
 function ForgotView({ onSwitch }: { onSwitch: (v: View) => void }) {
   const [email, setEmail] = useState('');
@@ -409,14 +453,14 @@ function ForgotView({ onSwitch }: { onSwitch: (v: View) => void }) {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? 'Something went wrong. Please try again.');
+        setError((data.error ?? 'SYSTEM ERROR').toUpperCase());
         setLoading(false);
         return;
       }
 
       setSent(true);
     } catch {
-      setError('Something went wrong. Please try again.');
+      setError('SYSTEM ERROR — PLEASE TRY AGAIN');
       setLoading(false);
     }
   }
@@ -425,41 +469,43 @@ function ForgotView({ onSwitch }: { onSwitch: (v: View) => void }) {
     <motion.div key="forgot" {...fadeInUp} className="w-full">
       <button
         onClick={() => onSwitch('login')}
-        className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 font-medium mb-6 transition-colors"
+        className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black mb-6 transition-colors"
       >
-        <ArrowLeft size={14} /> Back to sign in
+        <ArrowLeft size={12} /> BACK TO LOGIN
       </button>
 
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Forgot password?</h1>
-        <p className="text-sm text-gray-500 mt-1 font-medium">
-          Enter your email and we&apos;ll send a reset link.
+      <div className="mb-7">
+        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">
+          PASSWORD RESET PROTOCOL
         </p>
+        <h1 className="text-3xl font-black tracking-tighter text-black uppercase">
+          RECOVERY
+        </h1>
       </div>
 
       {sent ? (
         <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-green-50 border border-green-100 rounded-full text-2xl">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-50 border border-gray-200 rounded-full text-2xl">
             ✉️
           </div>
-          <p className="text-sm font-semibold text-gray-900">Check your inbox</p>
-          <p className="text-sm text-gray-500">
-            If an account exists for <strong>{email}</strong>, you&apos;ll receive a reset link
-            shortly. The link expires in 1 hour.
+          <p className="text-[11px] font-black uppercase tracking-widest text-black">TRANSMISSION SENT</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            IF AN ACCOUNT EXISTS FOR THIS EMAIL, A RESET LINK HAS BEEN DISPATCHED.
+            LINK EXPIRES IN 1 HOUR.
           </p>
           <button
             onClick={() => onSwitch('login')}
-            className="text-xs text-gray-500 hover:text-gray-900 font-medium transition-colors"
+            className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
           >
-            Back to sign in
+            ← RETURN TO LOGIN
           </button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <Field icon={<Mail size={16} />}>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Field label="REGISTERED EMAIL ADDRESS" icon={<Mail size={15} />}>
             <input
               type="email"
-              placeholder="Email address"
+              placeholder="operator@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -470,20 +516,16 @@ function ForgotView({ onSwitch }: { onSwitch: (v: View) => void }) {
 
           {error && <ErrorBanner message={error} />}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-black text-white rounded-full py-3.5 text-sm font-semibold hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-60"
-          >
-            {loading ? <><Loader2 size={16} className="animate-spin" /> Sending...</> : <>Send Reset Link <ArrowRight size={16} /></>}
-          </button>
+          <PrimaryButton loading={loading} loadingText="TRANSMITTING...">
+            INITIATE RECOVERY
+          </PrimaryButton>
         </form>
       )}
     </motion.div>
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
+// ─── Main page ─────────────────────────────────────────────────────────────────
 
 function AuthContent() {
   const searchParams = useSearchParams();
@@ -491,7 +533,9 @@ function AuthContent() {
   const [view, setView] = useState<View>(initialView);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] px-4 py-12">
+    <div className="auth-root min-h-screen flex flex-col items-center justify-center bg-[#F8F9FA] px-4 py-12">
+      <TypographyStyle />
+
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -501,16 +545,18 @@ function AuthContent() {
         </div>
 
         {/* Card */}
-        <div
-          className="bg-white rounded-2xl border border-gray-100 p-8"
-          style={{ boxShadow: '0 40px 100px -20px rgba(0,0,0,0.10), 0 20px 50px -20px rgba(0,0,0,0.06)' }}
-        >
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 uber-shadow">
           <AnimatePresence mode="wait" initial={false}>
             {view === 'login' && <LoginView key="login" onSwitch={setView} />}
             {view === 'register' && <RegisterView key="register" onSwitch={setView} />}
             {view === 'forgot' && <ForgotView key="forgot" onSwitch={setView} />}
           </AnimatePresence>
         </div>
+
+        {/* Footer */}
+        <p className="mt-6 text-center text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">
+          © 2026 DETAILHUB NETWORK
+        </p>
       </div>
     </div>
   );
