@@ -9,7 +9,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Building2, Sparkles } from "lucide-react";
+import { Loader2, Building2 } from "lucide-react";
 
 type ClaimCompany = {
   name: string;
@@ -82,9 +82,7 @@ export function RegisterForm({ claimSlug, claimCompany }: Props) {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 group">
-            <div className="bg-black text-white p-2 rounded-lg group-hover:scale-105 transition-transform">
-              <Sparkles size={18} strokeWidth={2.5} />
-            </div>
+            <img src="/images/logo.png" alt="DetailHub" className="h-8 w-8 group-hover:scale-105 transition-transform" />
             <span className="text-xl font-bold tracking-tight text-[#1d1d1f]">DetailHub</span>
           </Link>
           <h1 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mt-6">

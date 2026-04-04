@@ -1,7 +1,6 @@
 // src/components/layout/Navbar.tsx
 
 import Link from "next/link";
-import { Handshake } from "lucide-react";
 import { auth } from "@/lib/auth";
 import {
   DropdownMenu,
@@ -20,9 +19,7 @@ export async function Navbar() {
     <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-xl border-b border-gray-200/50 shadow-sm">
       <div className="max-w-[1200px] mx-auto flex h-16 items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#ff385c] flex items-center justify-center">
-            <Handshake size={18} className="text-white" strokeWidth={2.5} />
-          </div>
+          <img src="/images/logo.png" alt="DetailHub" className="h-8 w-8" />
           <span className="text-[22px] font-black tracking-tight italic uppercase text-[#1d1d1f]">
             Detail<span className="text-[#ff385c]">Hub</span>
           </span>

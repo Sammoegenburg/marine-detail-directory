@@ -1,7 +1,6 @@
 // src/components/layout/Footer.tsx
 
 import Link from "next/link";
-import { Handshake } from "lucide-react";
 
 export function Footer() {
   return (
@@ -10,9 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
           <div className="md:col-span-2">
             <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-[#ff385c] flex items-center justify-center">
-                <Handshake size={18} className="text-white" strokeWidth={2.5} />
-              </div>
+              <img src="/images/logo.png" alt="DetailHub" className="h-8 w-8" />
               <span className="text-xl font-black tracking-tight italic uppercase text-[#1d1d1f]">
                 Detail<span className="text-[#ff385c]">Hub</span>
               </span>

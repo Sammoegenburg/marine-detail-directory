@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { signOut } from 'next-auth/react';
+import { PaymentMethodForm } from '@/components/dashboard/PaymentMethodForm';
 import {
   LayoutDashboard, Inbox, UserCircle, CreditCard, MapPin, ChevronRight,
   Zap, CheckCircle2, Ship, Car, TrendingUp, Plus, Globe, Phone, Mail,
   Building2, ShieldCheck, Lock, User, Navigation, Maximize2, Info, X,
   Search, Check, Receipt, CreditCard as CardIcon, Download, LockKeyhole,
-  Sparkles, Loader2, LogOut
+  Loader2, LogOut
 } from 'lucide-react';
 
 // --- Global Stylings ---
@@ -224,7 +225,7 @@ function OnboardingView({ onComplete }: { onComplete: (data: any) => void }) {
     <div className="fixed inset-0 z-[600] bg-[#F8F9FA] flex flex-col items-center justify-center p-4 md:p-6 overflow-y-auto">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8 md:mb-10 px-4">
-          <div className="bg-black w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center mx-auto text-white shadow-2xl mb-4 md:mb-6"><Sparkles size={24} /></div>
+          <img src="/images/logo.png" alt="DetailHub" className="h-12 w-12 md:h-14 md:w-14 mx-auto mb-4 md:mb-6" />
           <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-black uppercase mb-1 md:mb-2 leading-tight">Welcome to DetailHub</h1>
           <p className="text-gray-400 font-bold text-[11px] md:text-base tracking-tight uppercase">Let&apos;s configure your terminal settings.</p>
         </div>
@@ -360,14 +361,30 @@ function LeadsView({ leads, purchasedLeads, onOpenLead }: { leads: Lead[]; purch
 // --- Billing View ---
 function BillingView({ purchasedLeads }: { purchasedLeads: Lead[] }) {
   const totalSpent = purchasedLeads.reduce((acc, l) => acc + l.price, 0);
+  const [paymentMethod, setPaymentMethod] = useState<{ brand: string; last4: string; expMonth: number; expYear: number } | null>(null);
+  const [pmLoading, setPmLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/stripe/setup')
+      .then(r => r.json())
+      .then(d => setPaymentMethod(d.paymentMethod ?? null))
+      .catch(() => setPaymentMethod(null))
+      .finally(() => setPmLoading(false));
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-200 p-8 rounded-[2rem] shadow-sm flex flex-col items-center justify-center min-h-[200px] text-center space-y-4">
-          <CardIcon size={32} className="text-gray-300" />
-          <h4 className="font-bold text-black uppercase text-[10px] tracking-widest">Payment Method</h4>
-          <p className="text-[10px] text-gray-400 max-w-xs">Payment is handled securely through Stripe when you unlock a lead. Your card details are never stored on our servers.</p>
-          <a href="/company/billing" className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-[9px] hover:bg-blue-700 shadow-lg">Manage Payment</a>
+        <div className="bg-white border border-gray-200 p-8 rounded-[2rem] shadow-sm space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <CardIcon size={18} className="text-gray-400" />
+            <h4 className="font-bold text-black uppercase text-[10px] tracking-widest">Payment Method</h4>
+          </div>
+          {pmLoading ? (
+            <div className="flex justify-center py-4"><Loader2 size={20} className="animate-spin-custom text-gray-300" /></div>
+          ) : (
+            <PaymentMethodForm currentPaymentMethod={paymentMethod} />
+          )}
         </div>
         <div className="bg-white border border-gray-200 p-8 rounded-[2rem] shadow-sm">
           <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Total Investment</span>
