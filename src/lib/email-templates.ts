@@ -19,6 +19,12 @@ export type ClaimVerificationEmailParams = {
   claimUrl: string;
 };
 
+export type ClaimStatusEmailParams = {
+  companyName: string;
+  cityName: string;
+  stateName: string;
+};
+
 const BRAND_COLOR = "#1d4ed8"; // blue-700
 const BRAND_NAME = "MarineDetailDirectory";
 
@@ -166,6 +172,74 @@ export function claimVerificationEmailHtml(params: ClaimVerificationEmailParams)
 
     <p style="margin:20px 0 0;color:#94a3b8;font-size:12px;text-align:center;">
       If you didn't request this, you can safely ignore this email.
+    </p>
+  `;
+
+  return emailWrapper(content);
+}
+
+export function claimApprovalEmailHtml(params: ClaimStatusEmailParams): string {
+  const { companyName, cityName, stateName } = params;
+  const dashboardUrl = `${BASE_URL}/company`;
+
+  const content = `
+    <h2 style="margin:0 0 8px;color:#0f172a;font-size:22px;font-weight:700;">
+      🎉 Your profile has been approved!
+    </h2>
+    <p style="margin:0 0 24px;color:#64748b;font-size:15px;">
+      Congratulations — <strong style="color:#0f172a;">${companyName}</strong> in ${cityName}, ${stateName}
+      is now live on MarineDetailDirectory.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin-bottom:28px;">
+      <tr>
+        <td style="padding:20px 24px;">
+          <p style="margin:0 0 8px;color:#166534;font-size:14px;font-weight:600;">You can now:</p>
+          <ul style="margin:0;padding-left:20px;color:#15803d;font-size:13px;line-height:1.9;">
+            <li>Receive and purchase leads from customers in your area</li>
+            <li>Manage your business profile and services</li>
+            <li>Set up your payment method to unlock leads</li>
+          </ul>
+        </td>
+      </tr>
+    </table>
+
+    <div style="text-align:center;">
+      <a href="${dashboardUrl}"
+         style="display:inline-block;background-color:${BRAND_COLOR};color:#ffffff;font-size:15px;font-weight:600;padding:14px 32px;border-radius:8px;text-decoration:none;">
+        Go to My Dashboard →
+      </a>
+    </div>
+  `;
+
+  return emailWrapper(content);
+}
+
+export function claimRejectionEmailHtml(params: ClaimStatusEmailParams): string {
+  const { companyName, cityName, stateName } = params;
+
+  const content = `
+    <h2 style="margin:0 0 8px;color:#0f172a;font-size:22px;font-weight:700;">
+      Update on your claim for ${companyName}
+    </h2>
+    <p style="margin:0 0 24px;color:#64748b;font-size:15px;">
+      We were unable to verify your ownership of <strong style="color:#0f172a;">${companyName}</strong>
+      in ${cityName}, ${stateName} at this time.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;margin-bottom:28px;">
+      <tr>
+        <td style="padding:20px 24px;">
+          <p style="margin:0;color:#991b1b;font-size:14px;line-height:1.6;">
+            If you believe this is a mistake, please reply to this email with proof of ownership
+            (business license, utility bill, or similar documentation) and we will re-review your claim.
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin:0;color:#64748b;font-size:14px;text-align:center;">
+      Thank you for your interest in MarineDetailDirectory.
     </p>
   `;
 

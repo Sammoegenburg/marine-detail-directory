@@ -4,6 +4,8 @@
 import {
   newLeadEmailHtml,
   claimVerificationEmailHtml,
+  claimApprovalEmailHtml,
+  claimRejectionEmailHtml,
 } from "./email-templates";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
@@ -88,6 +90,40 @@ export async function sendNewLeadNotification(
       );
     }
   });
+}
+
+export async function sendClaimApprovalEmail(
+  email: string,
+  companyName: string,
+  cityName: string,
+  stateName: string
+): Promise<void> {
+  try {
+    await sendEmail({
+      to: [{ email, name: companyName }],
+      subject: `✅ Your profile for ${companyName} has been approved!`,
+      htmlContent: claimApprovalEmailHtml({ companyName, cityName, stateName }),
+    });
+  } catch (err) {
+    console.error("[Brevo] Failed to send approval email:", err);
+  }
+}
+
+export async function sendClaimRejectionEmail(
+  email: string,
+  companyName: string,
+  cityName: string,
+  stateName: string
+): Promise<void> {
+  try {
+    await sendEmail({
+      to: [{ email, name: companyName }],
+      subject: `Update on your claim for ${companyName} — MarineDetailDirectory`,
+      htmlContent: claimRejectionEmailHtml({ companyName, cityName, stateName }),
+    });
+  } catch (err) {
+    console.error("[Brevo] Failed to send rejection email:", err);
+  }
 }
 
 export async function sendClaimVerificationEmail(
