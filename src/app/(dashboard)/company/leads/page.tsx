@@ -1,5 +1,5 @@
 // src/app/(dashboard)/company/leads/page.tsx
-// Company lead inbox — browse available and purchased leads
+// Company lead inbox — available leads (redacted) and purchased leads (full contact)
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -24,6 +24,7 @@ export default async function CompanyLeadsPage() {
         cityId: company.cityId,
         status: { in: ["NEW", "AVAILABLE"] },
         purchases: { none: { companyId: company.id } },
+        expiresAt: { gt: new Date() },
       },
       orderBy: { createdAt: "desc" },
       include: {
@@ -44,16 +45,6 @@ export default async function CompanyLeadsPage() {
       },
     }),
   ]);
-
-  function toLeadCardProps(lead: typeof availableLeads[0]) {
-    return {
-      ...lead,
-      status: lead.status as LeadStatus,
-      boatSize: lead.boatSize as BoatSize,
-      leadPrice: Number(lead.leadPrice),
-      service: { ...lead.service, category: lead.service.category as ServiceCategory },
-    };
-  }
 
   return (
     <div className="space-y-6">
@@ -76,7 +67,33 @@ export default async function CompanyLeadsPage() {
           {availableLeads.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {availableLeads.map((lead) => (
-                <LeadCard key={lead.id} lead={toLeadCardProps(lead)} isPurchased={false} />
+                <LeadCard
+                  key={lead.id}
+                  isPurchased={false}
+                  lead={{
+                    id: lead.id,
+                    // Only expose first name for available leads
+                    customerName: lead.customerName.split(" ")[0],
+                    status: lead.status as LeadStatus,
+                    boatSize: lead.boatSize as BoatSize,
+                    boatType: lead.boatType,
+                    boatMake: lead.boatMake,
+                    boatYear: lead.boatYear,
+                    zipCode: lead.zipCode,
+                    notes: lead.notes,
+                    preferredDate: lead.preferredDate,
+                    leadPrice: Number(lead.leadPrice),
+                    createdAt: lead.createdAt,
+                    service: {
+                      name: lead.service.name,
+                      category: lead.service.category as ServiceCategory,
+                    },
+                    city: {
+                      name: lead.city.name,
+                      state: { abbreviation: lead.city.state.abbreviation },
+                    },
+                  }}
+                />
               ))}
             </div>
           ) : (
@@ -89,18 +106,39 @@ export default async function CompanyLeadsPage() {
         <TabsContent value="purchased" className="mt-6">
           {purchasedLeads.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {purchasedLeads.map((purchase) => (
-                <LeadCard
-                  key={purchase.id}
-                  lead={{
-                    ...toLeadCardProps(purchase.lead),
-                    customerName: purchase.lead.customerName,
-                    customerEmail: purchase.lead.customerEmail,
-                    customerPhone: purchase.lead.customerPhone,
-                  }}
-                  isPurchased={true}
-                />
-              ))}
+              {purchasedLeads.map((purchase) => {
+                const lead = purchase.lead;
+                return (
+                  <LeadCard
+                    key={purchase.id}
+                    isPurchased={true}
+                    lead={{
+                      id: lead.id,
+                      customerName: lead.customerName,
+                      customerEmail: lead.customerEmail,
+                      customerPhone: lead.customerPhone,
+                      status: lead.status as LeadStatus,
+                      boatSize: lead.boatSize as BoatSize,
+                      boatType: lead.boatType,
+                      boatMake: lead.boatMake,
+                      boatYear: lead.boatYear,
+                      zipCode: lead.zipCode,
+                      notes: lead.notes,
+                      preferredDate: lead.preferredDate,
+                      leadPrice: Number(lead.leadPrice),
+                      createdAt: lead.createdAt,
+                      service: {
+                        name: lead.service.name,
+                        category: lead.service.category as ServiceCategory,
+                      },
+                      city: {
+                        name: lead.city.name,
+                        state: { abbreviation: lead.city.state.abbreviation },
+                      },
+                    }}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="rounded-lg border border-dashed p-12 text-center text-slate-400">

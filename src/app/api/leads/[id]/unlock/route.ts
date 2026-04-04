@@ -1,9 +1,11 @@
 // src/app/api/leads/[id]/unlock/route.ts
-// POST: company unlocks a lead (Phase 1 stub — Stripe charge wired in Phase 2)
+// POST: company unlocks a lead via Stripe off-session PaymentIntent
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { stripe, createPaymentIntent } from "@/lib/stripe";
+import Stripe from "stripe";
 
 export async function POST(
   _req: NextRequest,
@@ -27,52 +29,110 @@ export async function POST(
     );
   }
 
-  const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+  if (!company.stripeCustomerId) {
+    return NextResponse.json(
+      { error: "Add a payment method first.", code: "NO_PAYMENT_METHOD" },
+      { status: 402 }
+    );
+  }
+
+  // Verify lead exists, is in the company's service area, and is unlockable
+  const lead = await prisma.lead.findUnique({
+    where: { id: leadId },
+    include: { service: true },
+  });
 
   if (!lead) {
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+  }
+
+  if (lead.cityId !== company.cityId) {
+    return NextResponse.json(
+      { error: "This lead is outside your service area." },
+      { status: 403 }
+    );
   }
 
   if (lead.status === "EXPIRED" || lead.expiresAt < new Date()) {
     return NextResponse.json({ error: "This lead has expired." }, { status: 410 });
   }
 
-  // Check not already purchased
+  if (!["NEW", "AVAILABLE"].includes(lead.status)) {
+    return NextResponse.json(
+      { error: "This lead is no longer available." },
+      { status: 409 }
+    );
+  }
+
+  // Check not already purchased by this company
   const existing = await prisma.leadPurchase.findUnique({
     where: { leadId_companyId: { leadId, companyId: company.id } },
   });
 
   if (existing) {
-    return NextResponse.json(
-      { error: "You have already purchased this lead." },
-      { status: 409 }
-    );
+    // Already purchased — return contact info
+    return NextResponse.json({
+      alreadyPurchased: true,
+      customerName: lead.customerName,
+      customerEmail: lead.customerEmail,
+      customerPhone: lead.customerPhone,
+    });
   }
 
-  const leadPrice = Number(lead.leadPrice);
+  // 3-tier lead price fallback: ServicePage → Service.baseLeadPrice
+  const servicePage = await prisma.servicePage.findUnique({
+    where: { cityId_serviceId: { cityId: lead.cityId, serviceId: lead.serviceId } },
+  });
+  const leadPrice = Number(servicePage?.leadPrice ?? lead.service.baseLeadPrice);
+  const amountCents = Math.round(leadPrice * 100);
 
-  // Phase 1: deduct from credit balance if available
-  if (Number(company.leadCreditBalance) < leadPrice) {
+  // Get customer's default payment method
+  const customer = await stripe.customers.retrieve(company.stripeCustomerId) as Stripe.Customer;
+  const defaultPmId = customer.invoice_settings?.default_payment_method as string | null;
+
+  if (!defaultPmId) {
     return NextResponse.json(
-      {
-        error: "Insufficient credit balance. Please add funds in the Billing section.",
-        code: "INSUFFICIENT_CREDITS",
-      },
+      { error: "Add a payment method first.", code: "NO_PAYMENT_METHOD" },
       { status: 402 }
     );
   }
 
-  // Atomic: deduct balance + create purchase record
+  // Charge the company's card
+  let paymentIntent: Stripe.PaymentIntent;
+  try {
+    paymentIntent = await createPaymentIntent({
+      amountCents,
+      customerId: company.stripeCustomerId,
+      paymentMethodId: defaultPmId,
+      metadata: {
+        leadId,
+        companyId: company.id,
+        serviceId: lead.serviceId,
+      },
+    });
+  } catch (err) {
+    const stripeError = err as Stripe.errors.StripeError;
+    return NextResponse.json(
+      { error: stripeError.message ?? "Payment failed. Please check your payment method." },
+      { status: 402 }
+    );
+  }
+
+  if (paymentIntent.status !== "succeeded") {
+    return NextResponse.json(
+      { error: "Payment did not complete. Please try again." },
+      { status: 402 }
+    );
+  }
+
+  // Atomic: create purchase record + update lead status
   await prisma.$transaction([
-    prisma.company.update({
-      where: { id: company.id },
-      data: { leadCreditBalance: { decrement: leadPrice } },
-    }),
     prisma.leadPurchase.create({
       data: {
         leadId,
         companyId: company.id,
         amountCharged: leadPrice,
+        stripePaymentIntentId: paymentIntent.id,
         paidAt: new Date(),
       },
     }),
@@ -82,5 +142,10 @@ export async function POST(
     }),
   ]);
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({
+    success: true,
+    customerName: lead.customerName,
+    customerEmail: lead.customerEmail,
+    customerPhone: lead.customerPhone,
+  });
 }

@@ -1,11 +1,14 @@
 // src/app/(dashboard)/company/billing/page.tsx
-// Billing page — Phase 1 stub, Stripe wired in Phase 2
+// Billing page — payment method management and purchase history
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { stripe } from "@/lib/stripe";
 import { redirect } from "next/navigation";
-import { CreditCard, DollarSign, Receipt } from "lucide-react";
+import { DollarSign, Receipt, CreditCard } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { PaymentMethodForm } from "@/components/dashboard/PaymentMethodForm";
+import type Stripe from "stripe";
 
 export default async function BillingPage() {
   const session = await auth();
@@ -29,6 +32,41 @@ export default async function BillingPage() {
     0
   );
 
+  // Fetch current default payment method from Stripe
+  type PaymentMethodData = {
+    brand: string;
+    last4: string;
+    expMonth: number;
+    expYear: number;
+  } | null;
+
+  let currentPaymentMethod: PaymentMethodData = null;
+
+  if (company.stripeCustomerId) {
+    try {
+      const customer = await stripe.customers.retrieve(
+        company.stripeCustomerId
+      ) as Stripe.Customer;
+
+      const defaultPmId = customer.invoice_settings
+        ?.default_payment_method as string | null;
+
+      if (defaultPmId) {
+        const pm = await stripe.paymentMethods.retrieve(defaultPmId);
+        if (pm.card) {
+          currentPaymentMethod = {
+            brand: pm.card.brand,
+            last4: pm.card.last4,
+            expMonth: pm.card.exp_month,
+            expYear: pm.card.exp_year,
+          };
+        }
+      }
+    } catch {
+      // Customer may not exist yet — ignore
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -36,6 +74,7 @@ export default async function BillingPage() {
         <p className="text-slate-500">Manage your payment method and view lead purchase history.</p>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="rounded-lg border bg-white p-5">
           <div className="flex items-center gap-2 text-slate-500 text-sm mb-1">
@@ -53,24 +92,17 @@ export default async function BillingPage() {
         </div>
       </div>
 
+      {/* Payment Method */}
       <div className="bg-white rounded-xl border p-6">
         <div className="flex items-center gap-2 mb-4">
           <CreditCard className="h-5 w-5 text-slate-500" />
           <h2 className="font-semibold text-slate-900">Payment Method</h2>
         </div>
-        <Separator className="mb-4" />
-        <div className="rounded-lg border border-dashed p-6 text-center">
-          <p className="text-slate-400 text-sm">
-            Stripe payment integration coming in Phase 2.
-          </p>
-          {company.stripeCustomerId && (
-            <p className="text-xs text-slate-300 mt-1">
-              Stripe ID: {company.stripeCustomerId}
-            </p>
-          )}
-        </div>
+        <Separator className="mb-5" />
+        <PaymentMethodForm currentPaymentMethod={currentPaymentMethod} />
       </div>
 
+      {/* Purchase History */}
       <div className="bg-white rounded-xl border p-6">
         <h2 className="font-semibold text-slate-900 mb-4">Purchase History</h2>
         <Separator className="mb-4" />
@@ -82,15 +114,22 @@ export default async function BillingPage() {
                 className="flex items-center justify-between text-sm py-2 border-b last:border-0"
               >
                 <div>
-                  <p className="font-medium text-slate-800">{purchase.lead.service.name} Lead</p>
+                  <p className="font-medium text-slate-800">
+                    {purchase.lead.service.name} Lead
+                  </p>
                   <p className="text-slate-400 text-xs">
                     {new Date(purchase.createdAt).toLocaleDateString()}
                     {purchase.isRefunded && (
-                      <span className="ml-2 text-red-500">Refunded</span>
+                      <span className="ml-2 text-red-500 font-medium">Refunded</span>
+                    )}
+                    {purchase.stripePaymentIntentId && (
+                      <span className="ml-2 text-slate-300">
+                        · {purchase.stripePaymentIntentId.slice(-8)}
+                      </span>
                     )}
                   </p>
                 </div>
-                <p className="font-semibold text-slate-900">
+                <p className={`font-semibold ${purchase.isRefunded ? "line-through text-slate-400" : "text-slate-900"}`}>
                   ${Number(purchase.amountCharged).toFixed(2)}
                 </p>
               </div>
