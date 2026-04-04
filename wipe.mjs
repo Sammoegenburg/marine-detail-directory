@@ -1,7 +1,8 @@
-// Run: npx tsx wipe.js
-import { PrismaClient } from './src/generated/prisma/client.ts';
-import { Pool } from '@neondatabase/serverless';
-import { PrismaNeon } from '@prisma/adapter-neon';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { PrismaClient } = require('./src/generated/prisma/client');
+const { Pool } = require('@neondatabase/serverless');
+const { PrismaNeon } = require('@prisma/adapter-neon');
 
 const pool = new Pool({ connectionString: 'postgresql://neondb_owner:npg_I3hKLrXC8GeS@ep-spring-frog-am33h5rv-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require' });
 const adapter = new PrismaNeon(pool);
