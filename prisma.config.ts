@@ -11,7 +11,8 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    // DIRECT_URL bypasses pgBouncer — required for schema migrations
-    url: process.env["DIRECT_URL"]!,
+    // Use unpooled connection for migrations (direct, no pgBouncer)
+    // Vercel Neon integration sets DATABASE_URL_UNPOOLED; fall back to DIRECT_URL for local dev
+    url: (process.env["DATABASE_URL_UNPOOLED"] ?? process.env["DIRECT_URL"])!,
   },
 });

@@ -1,6 +1,8 @@
 // src/app/(marketing)/companies/[slug]/page.tsx
 // Public company profile page
 
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { generateCompanyMetadata } from "@/lib/seo/generateMetadata";

@@ -1,6 +1,8 @@
 // src/app/page.tsx
 // Homepage — redirects to the marketing layout
 
+export const dynamic = "force-dynamic";
+
 import { HeroSection } from "@/components/marketing/HeroSection";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";

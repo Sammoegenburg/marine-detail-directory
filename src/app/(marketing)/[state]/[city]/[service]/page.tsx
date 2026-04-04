@@ -1,6 +1,8 @@
 // src/app/(marketing)/[state]/[city]/[service]/page.tsx
 // Service page: /florida/fort-lauderdale/hull-cleaning
 
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { generateServicePageMetadata } from "@/lib/seo/generateMetadata";

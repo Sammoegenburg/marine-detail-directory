@@ -1,6 +1,8 @@
 // src/app/(marketing)/[state]/page.tsx
 // State hub: /florida
 
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { generateStateMetadata } from "@/lib/seo/generateMetadata";
