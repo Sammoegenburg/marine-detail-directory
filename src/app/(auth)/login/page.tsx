@@ -63,7 +63,7 @@ function LoginForm() {
           <div className="bg-black text-white p-2 rounded-lg group-hover:scale-105 transition-transform">
             <Ship size={18} strokeWidth={2.5} />
           </div>
-          <span className="text-xl font-bold tracking-tight text-[#1d1d1f]">MarineDirectory.</span>
+          <span className="text-xl font-bold tracking-tight text-[#1d1d1f]">DetailHub</span>
         </Link>
         <h1 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mt-6">Sign in to your account</h1>
         {registered && (

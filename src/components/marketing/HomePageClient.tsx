@@ -108,7 +108,7 @@ function lengthToBoatSize(ft: string): BoatSize {
 // ─── Scroll reveal hook ───────────────────────────────────────────────────────
 
 function useScrollReveal() {
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const obs = new IntersectionObserver(
@@ -150,8 +150,8 @@ const FadeUp = ({
 
 export default function HomePageClient({ services, cities }: Props) {
   // Nav
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(true);
 
   // Booking card
   const [vehicleType, setVehicleType] = useState<VehicleType>("yachting");
@@ -159,22 +159,22 @@ export default function HomePageClient({ services, cities }: Props) {
   const [stateInput, setStateInput] = useState("");
   const [zipInput, setZipInput] = useState("");
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
-  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(true);
   const [selectedServiceId, setSelectedServiceId] = useState("");
-  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+  const [showServiceDropdown, setShowServiceDropdown] = useState(true);
   const [vehicleDetails, setVehicleDetails] = useState("");
-  const [showVehicleSuggestions, setShowVehicleSuggestions] = useState(false);
+  const [showVehicleSuggestions, setShowVehicleSuggestions] = useState(true);
   const [boatLength, setBoatLength] = useState("");
   const [bookingError, setBookingError] = useState("");
 
   // Contact modal
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(true);
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(true);
   const [submitError, setSubmitError] = useState("");
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(true);
 
   // Refs for click-outside
   const cityRef = useRef<HTMLDivElement>(null);
