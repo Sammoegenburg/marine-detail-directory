@@ -111,9 +111,14 @@ export async function POST(
       },
     });
   } catch (err) {
-    const stripeError = err as Stripe.errors.StripeError;
+    if (err instanceof Stripe.errors.StripeError) {
+      return NextResponse.json(
+        { error: err.message ?? "Payment failed. Please check your payment method." },
+        { status: 402 }
+      );
+    }
     return NextResponse.json(
-      { error: stripeError.message ?? "Payment failed. Please check your payment method." },
+      { error: "Payment failed. Please check your payment method." },
       { status: 402 }
     );
   }
