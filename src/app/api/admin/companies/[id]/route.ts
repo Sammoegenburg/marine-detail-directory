@@ -1,5 +1,5 @@
 // src/app/api/admin/companies/[id]/route.ts
-// PATCH: admin actions — verify (set ACTIVE) or toggle featured
+// PATCH: admin actions — verify (set ACTIVE) or suspend
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -8,7 +8,7 @@ import { z } from "zod";
 
 const bodySchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("verify") }),
-  z.object({ action: z.literal("feature"), isFeatured: z.boolean() }),
+  z.object({ action: z.literal("suspend") }),
 ]);
 
 export async function PATCH(
@@ -37,11 +37,11 @@ export async function PATCH(
     return NextResponse.json({ success: true, status: "ACTIVE" });
   }
 
-  if (parsed.data.action === "feature") {
+  if (parsed.data.action === "suspend") {
     await prisma.company.update({
       where: { id },
-      data: { isFeatured: parsed.data.isFeatured },
+      data: { status: "SUSPENDED" },
     });
-    return NextResponse.json({ success: true, isFeatured: parsed.data.isFeatured });
+    return NextResponse.json({ success: true, status: "SUSPENDED" });
   }
 }

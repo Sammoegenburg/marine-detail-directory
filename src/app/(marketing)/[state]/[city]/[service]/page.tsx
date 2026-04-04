@@ -1,5 +1,5 @@
 // src/app/(marketing)/[state]/[city]/[service]/page.tsx
-// Service page: /florida/fort-lauderdale/hull-cleaning
+// Service page: /florida/fort-lauderdale/hull-cleaning — lead form landing page
 
 export const dynamic = "force-dynamic";
 
@@ -7,14 +7,12 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { generateServicePageMetadata } from "@/lib/seo/generateMetadata";
 import { interpolate, SERVICE_PAGE_TEMPLATE } from "@/lib/seo/templates";
-import { CompanyCard } from "@/components/marketing/CompanyCard";
-import { LeadForm } from "@/components/marketing/LeadForm";
 import { LocalBusinessSchema } from "@/components/seo/LocalBusinessSchema";
+import { LeadIntakeForm } from "@/components/marketing/LeadIntakeForm";
 import { FadeUp } from "@/components/marketing/FadeUp";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Star, Users, ShieldCheck, Clock, MapPin } from "lucide-react";
 import type { Metadata } from "next";
-import type { PublicCompany } from "@/types";
 
 type Props = {
   params: Promise<{ state: string; city: string; service: string }>;
@@ -45,53 +43,22 @@ async function getPageData(stateSlug: string, citySlug: string, serviceSlug: str
     }),
     prisma.service.findUnique({ where: { slug: serviceSlug } }),
   ]);
-
   if (!city || !service) return null;
 
-  const [page, companies] = await Promise.all([
+  const [page, proCount] = await Promise.all([
     prisma.servicePage.findUnique({
       where: { cityId_serviceId: { cityId: city.id, serviceId: service.id } },
     }),
-    prisma.company.findMany({
+    prisma.company.count({
       where: {
         cityId: city.id,
         status: "ACTIVE",
         services: { some: { serviceId: service.id, isActive: true } },
       },
-      orderBy: [{ isFeatured: "desc" }, { averageRating: "desc" }],
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        status: true,
-        description: true,
-        logoUrl: true,
-        coverImageUrl: true,
-        photoUrls: true,
-        yearEstablished: true,
-        isInsured: true,
-        isFeatured: true,
-        averageRating: true,
-        reviewCount: true,
-        city: {
-          select: {
-            name: true,
-            slug: true,
-            state: { select: { name: true, slug: true } },
-          },
-        },
-        services: {
-          where: { isActive: true },
-          select: {
-            customPrice: true,
-            service: { select: { name: true, slug: true } },
-          },
-        },
-      },
     }),
   ]);
 
-  return { city, service, page, companies };
+  return { city, service, page, proCount };
 }
 
 export default async function ServicePage({ params }: Props) {
@@ -99,9 +66,12 @@ export default async function ServicePage({ params }: Props) {
   const data = await getPageData(stateSlug, citySlug, serviceSlug);
 
   if (!data) notFound();
-  const { city, service, page, companies } = data;
+  const { city, service, page, proCount } = data;
 
-  const allServices = await prisma.service.findMany({ orderBy: { name: "asc" } });
+  const allServices = await prisma.service.findMany({
+    select: { id: true, name: true, slug: true },
+    orderBy: { name: "asc" },
+  });
 
   const content = interpolate(
     page?.contentBlock ?? SERVICE_PAGE_TEMPLATE,
@@ -115,23 +85,24 @@ export default async function ServicePage({ params }: Props) {
     }
   );
 
-  const publicCompanies: PublicCompany[] = companies.map((c) => ({
-    id: c.id,
-    name: c.name,
-    slug: c.slug,
-    status: c.status as PublicCompany["status"],
-    description: c.description,
-    logoUrl: c.logoUrl,
-    coverImageUrl: c.coverImageUrl,
-    photoUrls: c.photoUrls,
-    yearEstablished: c.yearEstablished,
-    isInsured: c.isInsured,
-    isFeatured: c.isFeatured,
-    averageRating: c.averageRating ? Number(c.averageRating) : null,
-    reviewCount: c.reviewCount,
-    city: { name: c.city.name, slug: c.city.slug, state: { name: c.city.state.name, slug: c.city.state.slug } },
-    services: c.services.map((cs) => ({ service: { name: cs.service.name, slug: cs.service.slug }, customPrice: cs.customPrice })),
-  }));
+  const faqs = [
+    {
+      q: `How does ${service.name.toLowerCase()} work in ${city.name}?`,
+      a: `Submit your boat details and we'll match you with ${service.name.toLowerCase()} specialists in ${city.name}. They'll review your request and reach out with exact quotes.`,
+    },
+    {
+      q: `How much does ${service.name.toLowerCase()} cost?`,
+      a: "Pricing depends on boat size, condition, and the specific work needed. Pros give exact quotes after reviewing your request.",
+    },
+    {
+      q: "Are the pros insured and verified?",
+      a: "Yes — all pros on our network are vetted and insured before they can access leads.",
+    },
+    {
+      q: "How quickly will I hear back?",
+      a: `Most customers in ${city.name} receive their first quote within a few hours.`,
+    },
+  ];
 
   return (
     <>
@@ -143,6 +114,7 @@ export default async function ServicePage({ params }: Props) {
       />
 
       <div className="min-h-screen bg-[#F7F7F9] font-sans">
+
         {/* Hero */}
         <section className="pt-16 pb-10 px-6 max-w-[1400px] mx-auto">
           <div className="flex items-center gap-2 text-sm text-gray-400 mb-6 font-medium flex-wrap">
@@ -157,79 +129,86 @@ export default async function ServicePage({ params }: Props) {
 
           <FadeUp>
             <h1 className="text-5xl md:text-[64px] font-bold tracking-tighter text-[#1d1d1f] mb-4 leading-[1.05]">
-              {page?.h1 ?? `${service.name} in ${city.name}, ${city.state.abbreviation}`}
+              {page?.h1 ?? `Get ${service.name} Quotes in ${city.name}, ${city.state.abbreviation}`}
             </h1>
-            <p className="text-lg md:text-xl text-gray-500 font-medium tracking-tight max-w-2xl leading-relaxed">
+            <p className="text-lg md:text-xl text-gray-500 font-medium tracking-tight max-w-2xl leading-relaxed mb-8">
               {content}
             </p>
           </FadeUp>
-        </section>
 
-        {/* Lead-first hero CTA */}
-        <section className="px-6 pb-8 max-w-[1400px] mx-auto">
-          <FadeUp>
-            <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] p-8 md:p-12 shadow-lg border border-gray-100 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#1d1d1f] mb-4">
-                Get Free Quotes from Verified Pros
-              </h2>
-              <p className="text-gray-500 text-lg mb-6">
-                Tell us about your boat and we&apos;ll connect you with top-rated {service.name.toLowerCase()} specialists in {city.name}.
-              </p>
-              <a
-                href="#quote-form"
-                className="inline-block bg-[#ff385c] text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-[#d90b34] transition-all shadow-lg shadow-red-500/30"
-              >
-                Get My Free Quotes →
-              </a>
+          {/* Trust signals */}
+          <FadeUp delay={100}>
+            <div className="flex flex-wrap gap-4 mb-4">
+              <div className="flex items-center gap-2 bg-white rounded-full px-5 py-2.5 shadow-sm border border-gray-100">
+                <Users size={16} className="text-[#ff385c]" />
+                <span className="text-sm font-bold text-[#1d1d1f]">
+                  {proCount} {service.name.toLowerCase()} specialist{proCount !== 1 ? "s" : ""} in {city.name}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 bg-white rounded-full px-5 py-2.5 shadow-sm border border-gray-100">
+                <Star size={16} className="text-amber-400 fill-amber-400" />
+                <span className="text-sm font-bold text-[#1d1d1f]">4.9 average rating</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white rounded-full px-5 py-2.5 shadow-sm border border-gray-100">
+                <ShieldCheck size={16} className="text-green-500" />
+                <span className="text-sm font-bold text-[#1d1d1f]">All pros insured & vetted</span>
+              </div>
             </div>
           </FadeUp>
         </section>
 
-        {/* Two-column layout */}
-        <section className="px-6 pb-20 max-w-[1400px] mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-            {/* Company listings */}
-            <div className="lg:col-span-2">
-              <FadeUp>
-                <h2 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mb-6">
-                  Verified {service.name} Pros in {city.name} ({publicCompanies.length})
-                </h2>
+        {/* Lead Form */}
+        <section className="px-6 pb-16 max-w-[1400px] mx-auto">
+          <FadeUp delay={150}>
+            <LeadIntakeForm
+              defaultCity={city.name}
+              defaultState={city.state.name}
+              defaultService={service.slug}
+              services={allServices}
+            />
+          </FadeUp>
+        </section>
+
+        {/* Value Props */}
+        <section className="py-16 md:py-20 px-6 bg-white rounded-[2rem] md:rounded-[3rem] max-w-[1400px] mx-4 md:mx-auto shadow-sm border border-gray-100 mb-16 md:mb-24">
+          <FadeUp>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tighter text-center mb-12">
+              Why use MarineDirectory for {service.name.toLowerCase()}?
+            </h2>
+          </FadeUp>
+          <div className="grid md:grid-cols-3 gap-10 md:gap-16 max-w-[1100px] mx-auto">
+            {[
+              { icon: <MapPin size={28} />, title: "Local Specialists", desc: `Pros who specialize in ${service.name.toLowerCase()} and actively service ${city.name} marinas.` },
+              { icon: <Clock size={28} />, title: "Fast Quotes", desc: "Most customers hear back from multiple specialists within hours." },
+              { icon: <ShieldCheck size={28} />, title: "Fully Insured", desc: "Every pro is vetted and insured. Zero risk to you." },
+            ].map((item, i) => (
+              <FadeUp key={i} delay={i * 80} className="flex flex-col items-center text-center">
+                <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-black mb-5 border border-gray-100">
+                  {item.icon}
+                </div>
+                <h3 className="text-xl font-bold tracking-tight mb-2">{item.title}</h3>
+                <p className="text-gray-500 text-base font-medium leading-relaxed">{item.desc}</p>
               </FadeUp>
+            ))}
+          </div>
+        </section>
 
-              {publicCompanies.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {publicCompanies.map((company, i) => (
-                    <FadeUp key={company.id} delay={i * 50}>
-                      <CompanyCard company={company} />
-                    </FadeUp>
-                  ))}
+        {/* FAQ */}
+        <section className="px-6 pb-20 max-w-[800px] mx-auto">
+          <FadeUp>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tighter mb-10">
+              Frequently asked questions
+            </h2>
+          </FadeUp>
+          <div className="space-y-4">
+            {faqs.map((faq, i) => (
+              <FadeUp key={i} delay={i * 60}>
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h3 className="font-bold text-[#1d1d1f] mb-2 tracking-tight">{faq.q}</h3>
+                  <p className="text-gray-500 font-medium leading-relaxed text-sm md:text-base">{faq.a}</p>
                 </div>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-12 text-center text-gray-400">
-                  No verified {service.name.toLowerCase()} specialists listed yet in {city.name}.
-                  <br />
-                  <Link href="/register" className="text-black font-semibold hover:underline text-sm mt-2 inline-block">
-                    List your business →
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {/* Glassmorphic sticky form */}
-            <aside id="quote-form">
-              <div className="sticky top-24 rounded-2xl bg-white/80 backdrop-blur-xl border border-gray-100 p-6 shadow-sm">
-                <h3 className="font-bold text-[#1d1d1f] tracking-tight text-lg mb-1">
-                  Get a Free {service.name} Quote
-                </h3>
-                <p className="text-sm text-gray-500 mb-4 font-medium">
-                  We&apos;ll connect you with the top {service.name.toLowerCase()} specialists in {city.name}.
-                </p>
-                <LeadForm
-                  defaultServiceId={service.id}
-                  services={allServices.map((s) => ({ id: s.id, name: s.name }))}
-                />
-              </div>
-            </aside>
+              </FadeUp>
+            ))}
           </div>
         </section>
       </div>

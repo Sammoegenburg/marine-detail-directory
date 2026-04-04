@@ -1,20 +1,17 @@
 // src/app/(marketing)/[state]/[city]/page.tsx
-// City hub: /florida/fort-lauderdale
+// City hub: /florida/fort-lauderdale — lead form landing page
 
 export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { generateCityMetadata } from "@/lib/seo/generateMetadata";
-import { interpolate, CITY_HUB_TEMPLATE } from "@/lib/seo/templates";
-import { CompanyCard } from "@/components/marketing/CompanyCard";
-import { LeadForm } from "@/components/marketing/LeadForm";
 import { LocalBusinessSchema } from "@/components/seo/LocalBusinessSchema";
 import { FadeUp } from "@/components/marketing/FadeUp";
+import { LeadIntakeForm } from "@/components/marketing/LeadIntakeForm";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Star, Users, ShieldCheck, Clock, MapPin } from "lucide-react";
 import type { Metadata } from "next";
-import type { PublicCompany } from "@/types";
 
 type Props = {
   params: Promise<{ state: string; city: string }>;
@@ -31,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     cityName: city.name,
     stateName: city.state.name,
     citySlug: city.slug,
-    stateSlug: stateSlug,
+    stateSlug,
     metaTitle: city.metaTitle,
     metaDesc: city.metaDesc,
   });
@@ -40,73 +37,40 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CityHubPage({ params }: Props) {
   const { state: stateSlug, city: citySlug } = await params;
 
-  const city = await prisma.city.findFirst({
-    where: { slug: citySlug, isActive: true, state: { slug: stateSlug } },
-    include: {
-      state: true,
-      pages: { include: { service: true } },
-      companies: {
-        where: { status: "ACTIVE" },
-        orderBy: [{ isFeatured: "desc" }, { averageRating: "desc" }],
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          status: true,
-          description: true,
-          logoUrl: true,
-          coverImageUrl: true,
-          photoUrls: true,
-          yearEstablished: true,
-          isInsured: true,
-          isFeatured: true,
-          averageRating: true,
-          reviewCount: true,
-          city: {
-            select: {
-              name: true,
-              slug: true,
-              state: { select: { name: true, slug: true } },
-            },
-          },
-          services: {
-            where: { isActive: true },
-            select: {
-              customPrice: true,
-              service: { select: { name: true, slug: true } },
-            },
-          },
-        },
+  const [city, services] = await Promise.all([
+    prisma.city.findFirst({
+      where: { slug: citySlug, isActive: true, state: { slug: stateSlug } },
+      include: {
+        state: true,
+        pages: { include: { service: true } },
+        _count: { select: { companies: { where: { status: "ACTIVE" } } } },
       },
-    },
-  });
+    }),
+    prisma.service.findMany({ select: { id: true, name: true, slug: true }, orderBy: { name: "asc" } }),
+  ]);
 
   if (!city) notFound();
 
-  const services = await prisma.service.findMany({ orderBy: { name: "asc" } });
+  const proCount = city._count.companies;
 
-  const content = interpolate(
-    city.contentBlock ?? CITY_HUB_TEMPLATE,
-    { city: city.name, state: city.state.name, stateAbbr: city.state.abbreviation, service: "", serviceLower: "" }
-  );
-
-  const publicCompanies: PublicCompany[] = city.companies.map((c) => ({
-    id: c.id,
-    name: c.name,
-    slug: c.slug,
-    status: c.status as PublicCompany["status"],
-    description: c.description,
-    logoUrl: c.logoUrl,
-    coverImageUrl: c.coverImageUrl,
-    photoUrls: c.photoUrls,
-    yearEstablished: c.yearEstablished,
-    isInsured: c.isInsured,
-    isFeatured: c.isFeatured,
-    averageRating: c.averageRating ? Number(c.averageRating) : null,
-    reviewCount: c.reviewCount,
-    city: { name: c.city.name, slug: c.city.slug, state: { name: c.city.state.name, slug: c.city.state.slug } },
-    services: c.services.map((cs) => ({ service: { name: cs.service.name, slug: cs.service.slug }, customPrice: cs.customPrice })),
-  }));
+  const faqs = [
+    {
+      q: `How does marine detailing work in ${city.name}?`,
+      a: `Submit your boat details and location. Our network of verified pros in ${city.name} will review your request and reach out with quotes. You choose the best fit.`,
+    },
+    {
+      q: "How much does boat detailing cost?",
+      a: "Pricing varies by boat size, service type, and condition. Pros will provide exact quotes after reviewing your request — no surprises.",
+    },
+    {
+      q: "Are the pros vetted and insured?",
+      a: "Yes. Every professional on our network is reviewed and must carry valid insurance before accessing leads.",
+    },
+    {
+      q: "How quickly will I hear back?",
+      a: `Most customers in ${city.name} hear from at least one pro within a few hours of submitting their request.`,
+    },
+  ];
 
   return (
     <>
@@ -120,6 +84,7 @@ export default async function CityHubPage({ params }: Props) {
       />
 
       <div className="min-h-screen bg-[#F7F7F9] font-sans">
+
         {/* Hero */}
         <section className="pt-16 pb-10 px-6 max-w-[1400px] mx-auto">
           <div className="flex items-center gap-2 text-sm text-gray-400 mb-6 font-medium flex-wrap">
@@ -132,15 +97,34 @@ export default async function CityHubPage({ params }: Props) {
 
           <FadeUp>
             <h1 className="text-5xl md:text-[64px] font-bold tracking-tighter text-[#1d1d1f] mb-4 leading-[1.05]">
-              Boat Detailing in {city.name}, {city.state.abbreviation}
+              Get Boat Detailing Quotes in {city.name}, {city.state.abbreviation}
             </h1>
             <p className="text-lg md:text-xl text-gray-500 font-medium tracking-tight max-w-2xl leading-relaxed mb-8">
-              {content}
+              Tell us about your boat. Local pros compete for your business. Free quotes, no commitment.
             </p>
           </FadeUp>
 
+          {/* Trust signals */}
+          <FadeUp delay={100}>
+            <div className="flex flex-wrap gap-4 mb-8">
+              <div className="flex items-center gap-2 bg-white rounded-full px-5 py-2.5 shadow-sm border border-gray-100">
+                <Users size={16} className="text-[#ff385c]" />
+                <span className="text-sm font-bold text-[#1d1d1f]">{proCount} verified pro{proCount !== 1 ? "s" : ""} serving {city.name}</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white rounded-full px-5 py-2.5 shadow-sm border border-gray-100">
+                <Star size={16} className="text-amber-400 fill-amber-400" />
+                <span className="text-sm font-bold text-[#1d1d1f]">4.9 average rating</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white rounded-full px-5 py-2.5 shadow-sm border border-gray-100">
+                <ShieldCheck size={16} className="text-green-500" />
+                <span className="text-sm font-bold text-[#1d1d1f]">All pros insured & vetted</span>
+              </div>
+            </div>
+          </FadeUp>
+
+          {/* Service links */}
           {city.pages.length > 0 && (
-            <FadeUp delay={100}>
+            <FadeUp delay={150}>
               <div className="mb-2">
                 <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3">Services in {city.name}</p>
                 <div className="flex flex-wrap gap-2">
@@ -159,62 +143,57 @@ export default async function CityHubPage({ params }: Props) {
           )}
         </section>
 
-        {/* Lead-first hero CTA */}
-        <section className="px-6 pb-8 max-w-[1400px] mx-auto">
-          <FadeUp>
-            <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] p-8 md:p-12 shadow-lg border border-gray-100 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tighter text-[#1d1d1f] mb-4">
-                Get Free Quotes from Verified Pros
-              </h2>
-              <p className="text-gray-500 text-lg mb-6">
-                Tell us about your boat and we&apos;ll connect you with top-rated marine detailers in {city.name}.
-              </p>
-              <a
-                href="#quote-form"
-                className="inline-block bg-[#ff385c] text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-[#d90b34] transition-all shadow-lg shadow-red-500/30"
-              >
-                Get My Free Quotes →
-              </a>
-            </div>
+        {/* Lead Form */}
+        <section className="px-6 pb-16 max-w-[1400px] mx-auto">
+          <FadeUp delay={200}>
+            <LeadIntakeForm
+              defaultCity={city.name}
+              defaultState={city.state.name}
+              services={services}
+            />
           </FadeUp>
         </section>
 
-        {/* Two-column layout */}
-        <section className="px-6 pb-20 max-w-[1400px] mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-            {/* Company listings */}
-            <div className="lg:col-span-2">
-              <FadeUp>
-                <h2 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mb-6">
-                  Verified Pros in {city.name} ({publicCompanies.length})
-                </h2>
+        {/* Value Props */}
+        <section className="py-16 md:py-20 px-6 bg-white rounded-[2rem] md:rounded-[3rem] max-w-[1400px] mx-4 md:mx-auto shadow-sm border border-gray-100 mb-16 md:mb-24">
+          <FadeUp>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tighter text-center mb-12">
+              Why use MarineDirectory in {city.name}?
+            </h2>
+          </FadeUp>
+          <div className="grid md:grid-cols-3 gap-10 md:gap-16 max-w-[1100px] mx-auto">
+            {[
+              { icon: <MapPin size={28} />, title: "Local Experts", desc: `Pros who actually service ${city.name} marinas — no out-of-area callbacks.` },
+              { icon: <Clock size={28} />, title: "Fast Response", desc: "Most customers hear back from multiple pros within hours of submitting." },
+              { icon: <ShieldCheck size={28} />, title: "Zero Risk", desc: "Free to submit. No commitment. You choose when and if you hire." },
+            ].map((item, i) => (
+              <FadeUp key={i} delay={i * 80} className="flex flex-col items-center text-center">
+                <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-black mb-5 border border-gray-100">
+                  {item.icon}
+                </div>
+                <h3 className="text-xl font-bold tracking-tight mb-2">{item.title}</h3>
+                <p className="text-gray-500 text-base font-medium leading-relaxed">{item.desc}</p>
               </FadeUp>
+            ))}
+          </div>
+        </section>
 
-              {publicCompanies.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {publicCompanies.map((company, i) => (
-                    <FadeUp key={company.id} delay={i * 50}>
-                      <CompanyCard company={company} />
-                    </FadeUp>
-                  ))}
+        {/* FAQ */}
+        <section className="px-6 pb-20 max-w-[800px] mx-auto">
+          <FadeUp>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tighter mb-10">
+              Frequently asked questions
+            </h2>
+          </FadeUp>
+          <div className="space-y-4">
+            {faqs.map((faq, i) => (
+              <FadeUp key={i} delay={i * 60}>
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h3 className="font-bold text-[#1d1d1f] mb-2 tracking-tight">{faq.q}</h3>
+                  <p className="text-gray-500 font-medium leading-relaxed text-sm md:text-base">{faq.a}</p>
                 </div>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-12 text-center text-gray-400">
-                  No verified detailers listed yet in {city.name}.
-                </div>
-              )}
-            </div>
-
-            {/* Glassmorphic sticky form */}
-            <aside id="quote-form">
-              <div className="sticky top-24 rounded-2xl bg-white/80 backdrop-blur-xl border border-gray-100 p-6 shadow-sm">
-                <h3 className="font-bold text-[#1d1d1f] tracking-tight text-lg mb-1">Get a Free Quote</h3>
-                <p className="text-sm text-gray-500 mb-4 font-medium">
-                  Tell us about your boat and we&apos;ll connect you with local detailers.
-                </p>
-                <LeadForm services={services.map((s) => ({ id: s.id, name: s.name }))} />
-              </div>
-            </aside>
+              </FadeUp>
+            ))}
           </div>
         </section>
       </div>

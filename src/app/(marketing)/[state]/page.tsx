@@ -90,8 +90,8 @@ export default async function StateHubPage({ params }: Props) {
                 >
                   <div>
                     <p className="font-bold text-[#1d1d1f] tracking-tight">{city.name}</p>
-                    <p className="text-sm text-gray-400 mt-0.5">
-                      {city._count.companies} verified pro{city._count.companies !== 1 ? "s" : ""}
+                    <p className="text-sm text-[#ff385c] font-semibold mt-0.5">
+                      Get quotes in {city.name}
                     </p>
                   </div>
                   <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-all" />
