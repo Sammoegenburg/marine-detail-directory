@@ -7,7 +7,6 @@ import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Search, ExternalLink } from "lucide-react";
 import { VerifyButton } from "@/components/dashboard/VerifyButton";
-import { FeatureButton } from "@/components/dashboard/FeatureButton";
 
 type Props = {
   searchParams: Promise<{ q?: string }>;
@@ -93,9 +92,6 @@ export default async function AdminCompaniesPage({ searchParams }: Props) {
                     <td className="px-4 py-3">
                       <p className="font-medium text-slate-900">{company.name}</p>
                       <p className="text-xs text-slate-400 mt-0.5">
-                        {company.isFeatured && (
-                          <span className="text-amber-600 font-semibold">★ Featured · </span>
-                        )}
                         Created {new Date(company.createdAt).toLocaleDateString()}
                       </p>
                     </td>
@@ -156,10 +152,6 @@ export default async function AdminCompaniesPage({ searchParams }: Props) {
                         {company.status !== "ACTIVE" && (
                           <VerifyButton companyId={company.id} />
                         )}
-                        <FeatureButton
-                          companyId={company.id}
-                          isFeatured={company.isFeatured}
-                        />
                       </div>
                     </td>
                   </tr>
