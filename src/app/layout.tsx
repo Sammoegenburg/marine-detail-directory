@@ -15,13 +15,13 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "MarineDetailDirectory — Find Boat Detailing Near You",
-    template: "%s | MarineDetailDirectory",
+    default: "DetailHub — Find Boat & Car Detailing Near You",
+    template: "%s | DetailHub",
   },
   description:
-    "The national directory connecting boat owners with trusted, licensed marine detailing professionals. Get free quotes from local experts.",
+    "The national marketplace connecting boat and vehicle owners with elite, vetted detailing professionals. Get free quotes from local experts.",
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_BASE_URL ?? "https://marinedetaildirectory.com"
+    process.env.NEXT_PUBLIC_BASE_URL ?? "https://detailhub.com"
   ),
 };
 

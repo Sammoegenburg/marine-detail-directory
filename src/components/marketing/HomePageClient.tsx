@@ -4,7 +4,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
-  Handshake,
   Ship,
   Car,
   ChevronDown,
@@ -159,22 +158,22 @@ export default function HomePageClient({ services, cities }: Props) {
   const [stateInput, setStateInput] = useState("");
   const [zipInput, setZipInput] = useState("");
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
-  const [showCitySuggestions, setShowCitySuggestions] = useState(true);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState("");
-  const [showServiceDropdown, setShowServiceDropdown] = useState(true);
+  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
   const [vehicleDetails, setVehicleDetails] = useState("");
-  const [showVehicleSuggestions, setShowVehicleSuggestions] = useState(true);
+  const [showVehicleSuggestions, setShowVehicleSuggestions] = useState(false);
   const [boatLength, setBoatLength] = useState("");
   const [bookingError, setBookingError] = useState("");
 
   // Contact modal
-  const [showModal, setShowModal] = useState(true);
+  const [showModal, setShowModal] = useState(false);
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
-  const [submitting, setSubmitting] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [submitSuccess, setSubmitSuccess] = useState(true);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   // Refs for click-outside
   const cityRef = useRef<HTMLDivElement>(null);
@@ -336,12 +335,7 @@ export default function HomePageClient({ services, cities }: Props) {
         <div className="max-w-[1200px] mx-auto px-6 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 z-50">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: ACCENT }}
-            >
-              <Handshake size={18} className="text-white" strokeWidth={2.5} />
-            </div>
+            <img src="/images/logo.png" alt="DetailHub" className="h-8 w-8" />
             <span className="text-[22px] font-black tracking-tight italic uppercase">
               Detail<span style={{ color: ACCENT }}>Hub</span>
             </span>
@@ -870,12 +864,7 @@ export default function HomePageClient({ services, cities }: Props) {
               <div className="bg-[#1a1a1a] rounded-3xl p-7 md:p-10 border border-white/10 shadow-2xl md:-rotate-1 hover:rotate-0 transition-transform duration-500">
                 <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/10">
                   <div className="flex items-center gap-3">
-                    <div
-                      className="w-11 h-11 rounded-2xl flex items-center justify-center"
-                      style={{ backgroundColor: ACCENT }}
-                    >
-                      <Handshake size={20} className="text-white" strokeWidth={2.5} />
-                    </div>
+                    <img src="/images/logo.png" alt="DetailHub" className="h-11 w-11" />
                     <div>
                       <div className="text-white font-black tracking-tight">DetailHub Pro</div>
                       <div className="text-xs font-bold text-green-400 flex items-center gap-1.5 mt-0.5">
@@ -932,12 +921,7 @@ export default function HomePageClient({ services, cities }: Props) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-14">
             <div className="lg:col-span-2">
               <div className="flex items-center gap-2.5 mb-4">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: ACCENT }}
-                >
-                  <Handshake size={18} className="text-white" strokeWidth={2.5} />
-                </div>
+                <img src="/images/logo.png" alt="DetailHub" className="h-8 w-8" />
                 <span className="text-xl font-black tracking-tight italic uppercase">
                   Detail<span style={{ color: ACCENT }}>Hub</span>
                 </span>
