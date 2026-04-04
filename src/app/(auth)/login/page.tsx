@@ -10,7 +10,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Ship, Loader2 } from "lucide-react";
+import { Handshake, Loader2 } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
@@ -61,9 +61,9 @@ function LoginForm() {
       <div className="text-center mb-8">
         <Link href="/" className="inline-flex items-center gap-2 group">
           <div className="bg-black text-white p-2 rounded-lg group-hover:scale-105 transition-transform">
-            <Ship size={18} strokeWidth={2.5} />
+            <Handshake size={18} strokeWidth={2.5} />
           </div>
-          <span className="text-xl font-bold tracking-tight text-[#1d1d1f]">MarineDirectory.</span>
+          <span className="text-xl font-bold tracking-tight text-[#1d1d1f]">DetailHub.</span>
         </Link>
         <h1 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mt-6">Sign in to your account</h1>
         {registered && (

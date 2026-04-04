@@ -108,7 +108,7 @@ function lengthToBoatSize(ft: string): BoatSize {
 // ─── Scroll reveal hook ───────────────────────────────────────────────────────
 
 function useScrollReveal() {
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const obs = new IntersectionObserver(
