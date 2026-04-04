@@ -1029,7 +1029,7 @@ export default function HomePageClient({ services, cities }: Props) {
                   <p className="text-sm text-gray-400 font-medium mt-1.5">
                     We&apos;ll share these with matched specialists in{" "}
                     <span className="text-[#1d1d1f] font-semibold">
-                      {selectedCity?.name ?? cityInput || "your area"}
+                      {(selectedCity?.name ?? cityInput) || "your area"}
                     </span>
                     .
                   </p>
