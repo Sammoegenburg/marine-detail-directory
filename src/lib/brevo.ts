@@ -1,28 +1,45 @@
 // src/lib/brevo.ts
-// Brevo transactional email client
+// Brevo transactional email via REST API (no SDK dependency)
 
-import * as Brevo from "@getbrevo/brevo";
 import {
   newLeadEmailHtml,
   claimVerificationEmailHtml,
 } from "./email-templates";
 
-if (!process.env.BREVO_API_KEY) {
-  console.warn("[Brevo] BREVO_API_KEY is not set — emails will not be sent");
-}
-
-function getApiInstance(): Brevo.TransactionalEmailsApi {
-  const apiInstance = new Brevo.TransactionalEmailsApi();
-  apiInstance.setApiKey(
-    Brevo.TransactionalEmailsApiApiKeys.apiKey,
-    process.env.BREVO_API_KEY!
-  );
-  return apiInstance;
-}
-
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL ?? "noreply@marinedetaildirectory.com";
 const SENDER_NAME = process.env.BREVO_SENDER_NAME ?? "MarineDetailDirectory";
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://marine-detail-directory.vercel.app";
+
+async function sendEmail(payload: {
+  to: { email: string; name: string }[];
+  subject: string;
+  htmlContent: string;
+}): Promise<void> {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) {
+    console.warn("[Brevo] BREVO_API_KEY not set — skipping email");
+    return;
+  }
+
+  const res = await fetch(BREVO_API_URL, {
+    method: "POST",
+    headers: {
+      "api-key": apiKey,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: SENDER_NAME, email: SENDER_EMAIL },
+      ...payload,
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Brevo API error ${res.status}: ${text}`);
+  }
+}
 
 type LeadNotificationParams = {
   leadId: string;
@@ -42,35 +59,31 @@ export async function sendNewLeadNotification(
   lead: LeadNotificationParams,
   companies: CompanyRecipient[]
 ): Promise<void> {
-  if (!process.env.BREVO_API_KEY || companies.length === 0) return;
-
-  const apiInstance = getApiInstance();
+  if (companies.length === 0) return;
 
   const results = await Promise.allSettled(
-    companies.map(async (company) => {
-      const email = new Brevo.SendSmtpEmail();
-      email.subject = `🎯 New ${lead.serviceName} Lead in ${lead.cityName} — Unlock for $${lead.leadPrice.toFixed(2)}`;
-      email.htmlContent = newLeadEmailHtml({
-        companyName: company.name,
-        cityName: lead.cityName,
-        stateName: lead.stateName,
-        serviceName: lead.serviceName,
-        boatSize: lead.boatSize,
-        leadPrice: lead.leadPrice,
-        leadId: lead.leadId,
-        baseUrl: BASE_URL,
-      });
-      email.sender = { name: SENDER_NAME, email: SENDER_EMAIL };
-      email.to = [{ email: company.email, name: company.name }];
-
-      return apiInstance.sendTransacEmail(email);
-    })
+    companies.map((company) =>
+      sendEmail({
+        to: [{ email: company.email, name: company.name }],
+        subject: `🎯 New ${lead.serviceName} Lead in ${lead.cityName} — Unlock for $${lead.leadPrice.toFixed(2)}`,
+        htmlContent: newLeadEmailHtml({
+          companyName: company.name,
+          cityName: lead.cityName,
+          stateName: lead.stateName,
+          serviceName: lead.serviceName,
+          boatSize: lead.boatSize,
+          leadPrice: lead.leadPrice,
+          leadId: lead.leadId,
+          baseUrl: BASE_URL,
+        }),
+      })
+    )
   );
 
   results.forEach((result, i) => {
     if (result.status === "rejected") {
       console.error(
-        `[Brevo] Failed to notify company "${companies[i].name}":`,
+        `[Brevo] Failed to notify "${companies[i].name}":`,
         result.reason
       );
     }
@@ -84,22 +97,17 @@ export async function sendClaimVerificationEmail(
   cityName: string,
   stateName: string
 ): Promise<void> {
-  if (!process.env.BREVO_API_KEY) return;
-
-  const apiInstance = getApiInstance();
-  const msg = new Brevo.SendSmtpEmail();
-  msg.subject = `Verify your claim for ${companyName} — MarineDetailDirectory`;
-  msg.htmlContent = claimVerificationEmailHtml({
-    companyName,
-    cityName,
-    stateName,
-    claimUrl,
-  });
-  msg.sender = { name: SENDER_NAME, email: SENDER_EMAIL };
-  msg.to = [{ email, name: companyName }];
-
   try {
-    await apiInstance.sendTransacEmail(msg);
+    await sendEmail({
+      to: [{ email, name: companyName }],
+      subject: `Verify your claim for ${companyName} — MarineDetailDirectory`,
+      htmlContent: claimVerificationEmailHtml({
+        companyName,
+        cityName,
+        stateName,
+        claimUrl,
+      }),
+    });
   } catch (err) {
     console.error("[Brevo] Failed to send claim verification email:", err);
   }
