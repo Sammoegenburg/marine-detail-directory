@@ -1,15 +1,15 @@
 "use client";
 
 // src/components/auth/RegisterForm.tsx
-// Registration form — handles both standard sign-up and the claim-a-listing flow
+// Register page wrapper — used by /register route for standard + claim flows.
+// Renders the same tactical UI as the login page's register view.
 
-import { useState } from "react";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { ArrowRight, ArrowLeft, Loader2, Ship, Car, Layers } from "lucide-react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2, Building2 } from "lucide-react";
 
 type ClaimCompany = {
   name: string;
@@ -22,174 +22,335 @@ type Props = {
   claimCompany: ClaimCompany;
 };
 
+type Specialization = "BOATS" | "CARS" | "BOTH";
+
+const fadeInUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+};
+
+function Field({
+  label,
+  id,
+  name,
+  type = "text",
+  placeholder,
+  required,
+  minLength,
+  autoComplete,
+  value,
+  onChange,
+}: {
+  label: string;
+  id: string;
+  name: string;
+  type?: string;
+  placeholder?: string;
+  required?: boolean;
+  minLength?: number;
+  autoComplete?: string;
+  value?: string;
+  onChange?: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className="text-[8px] font-black uppercase tracking-widest text-black">
+        {label}
+      </label>
+      <div className="input-focus border border-gray-200 rounded-xl bg-white transition-all">
+        <input
+          id={id}
+          name={name}
+          type={type}
+          placeholder={placeholder}
+          required={required}
+          minLength={minLength}
+          autoComplete={autoComplete}
+          value={value}
+          onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+          className="auth-input w-full px-4 py-3.5 bg-transparent text-sm font-medium text-gray-900 outline-none rounded-xl"
+        />
+      </div>
+    </div>
+  );
+}
+
 export function RegisterForm({ claimSlug, claimCompany }: Props) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const [form, setForm] = useState({
+    companyName: claimCompany?.name ?? "",
+    website: "",
+    email: "",
+    phone: "",
+    homeBase: claimCompany ? `${claimCompany.cityName}, ${claimCompany.stateName}` : "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [specialization, setSpecialization] = useState<Specialization>("BOTH");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  function update(field: keyof typeof form, value: string) {
+    setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
 
-    const form = new FormData(e.currentTarget);
-    const password = form.get("password") as string;
-    const confirm = form.get("confirmPassword") as string;
-
-    if (password !== confirm) {
-      setError("Passwords do not match");
-      setIsLoading(false);
+    if (form.password !== form.confirmPassword) {
+      setError("PASSWORDS DO NOT MATCH");
       return;
     }
+    if (form.password.length < 8) {
+      setError("PASSWORD MUST BE AT LEAST 8 CHARACTERS");
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: form.get("name"),
-          email: form.get("email"),
-          password,
+          companyName: form.companyName,
+          website: form.website || undefined,
+          email: form.email,
+          phone: form.phone || undefined,
+          homeBase: form.homeBase || undefined,
+          specialization,
+          password: form.password,
           claimSlug: claimSlug ?? undefined,
         }),
       });
 
-      if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.error ?? "Registration failed");
-      }
-
       const data = await res.json();
 
-      if (data.redirectUrl) {
-        // Claim flow — company already linked, go to dashboard
-        router.push(data.redirectUrl);
-      } else {
-        // Fresh registration — go to onboarding wizard
-        router.push("/login?registered=true");
+      if (!res.ok) {
+        setError((data.error ?? "REGISTRATION FAILED").toUpperCase());
+        setLoading(false);
+        return;
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-      setIsLoading(false);
+
+      // Auto sign-in
+      const signInResult = await signIn("credentials", {
+        email: form.email,
+        password: form.password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        router.push("/login?registered=true");
+        return;
+      }
+
+      router.push(data.redirectUrl ?? "/company");
+    } catch {
+      setError("SYSTEM ERROR — PLEASE TRY AGAIN");
+      setLoading(false);
     }
   }
 
-  const isClaiming = !!claimSlug && !!claimCompany;
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F7F7F9] font-sans px-4">
-      <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 group">
-            <img src="/images/logo.png" alt="DetailHub" className="h-8 w-8 group-hover:scale-105 transition-transform" />
-            <span className="text-xl font-bold tracking-tight text-[#1d1d1f]">DetailHub</span>
-          </Link>
-          <h1 className="text-2xl font-bold tracking-tighter text-[#1d1d1f] mt-6">
-            {isClaiming ? "Claim Your Listing" : "List your business"}
-          </h1>
-          <p className="text-gray-500 text-sm mt-1 font-medium">
-            Already have an account?{" "}
-            <Link href="/login" className="text-black font-semibold hover:underline">Sign in</Link>
-          </p>
-        </div>
+    <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        :root { --font-main: 'Inter', sans-serif; --brand-red: #ff385c; }
+        .auth-root { font-family: var(--font-main); -webkit-font-smoothing: antialiased; }
+        .uber-shadow { box-shadow: 0 40px 100px -20px rgba(0,0,0,0.12), 0 20px 50px -20px rgba(0,0,0,0.08); }
+        .input-focus:focus-within { border-color: #000000; box-shadow: 0 0 0 2px rgba(0,0,0,0.05); }
+        .auth-input::placeholder { color: #CBD5E1; font-weight: 500; }
+      `}} />
+      <div className="auth-root min-h-screen flex flex-col items-center justify-center bg-[#F8F9FA] px-4 py-12">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <Link href="/" className="inline-flex items-center gap-2 group">
+              <img
+                src="/images/logo.png"
+                alt="DetailHub"
+                className="h-8 w-8 group-hover:scale-105 transition-transform"
+              />
+              <span className="text-sm font-black uppercase tracking-widest text-black">
+                DetailHub
+              </span>
+            </Link>
+          </div>
 
-        {/* Claim context banner */}
-        {isClaiming && claimCompany && (
-          <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-            <div className="flex items-start gap-3">
-              <Building2 className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-blue-900">
-                  You&apos;re claiming: {claimCompany.name}
-                </p>
-                <p className="text-xs text-blue-700 mt-0.5">
-                  {claimCompany.cityName}, {claimCompany.stateName}
-                </p>
-                <p className="text-xs text-blue-600 mt-1">
-                  After registering, your claim will be reviewed within 24 hours.
+          {/* Card */}
+          <div className="bg-white rounded-[3rem] p-10 uber-shadow border border-gray-100">
+            <motion.div {...fadeInUp} className="w-full">
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-6"
+              >
+                <ArrowLeft size={12} /> Back to Sign In
+              </Link>
+
+              <div className="mb-7">
+                <h1 className="text-3xl font-black tracking-tighter text-black uppercase mb-2">
+                  Access Dashboard
+                </h1>
+                <p className="text-gray-400 font-bold text-[11px] uppercase tracking-widest leading-relaxed">
+                  Register your professional credentials
                 </p>
               </div>
-            </div>
-          </div>
-        )}
 
-        {/* Glassmorphic card */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-100 shadow-sm p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-semibold text-[#1d1d1f]">Full Name</Label>
-              <Input
-                id="name"
-                name="name"
-                placeholder="Jane Smith"
-                required
-                className="rounded-xl border-gray-200 focus:border-gray-900 focus:ring-0 font-medium"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-semibold text-[#1d1d1f]">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="jane@mydetailco.com"
-                required
-                className="rounded-xl border-gray-200 focus:border-gray-900 focus:ring-0 font-medium"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-semibold text-[#1d1d1f]">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Min. 8 characters"
-                required
-                minLength={8}
-                className="rounded-xl border-gray-200 focus:border-gray-900 focus:ring-0 font-medium"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-sm font-semibold text-[#1d1d1f]">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                required
-                className="rounded-xl border-gray-200 focus:border-gray-900 focus:ring-0 font-medium"
-              />
-            </div>
-
-            {error && (
-              <p className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2 font-medium">{error}</p>
-            )}
-
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-black hover:bg-gray-800 text-white rounded-full font-semibold py-2.5 transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5"
-            >
-              {isLoading ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating account…</>
-              ) : isClaiming ? (
-                "Create Account & Submit Claim"
-              ) : (
-                "Create Account"
+              {claimCompany && (
+                <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-700 leading-relaxed">
+                    Claiming: {claimCompany.name} — {claimCompany.cityName}, {claimCompany.stateName}
+                  </p>
+                </div>
               )}
-            </Button>
-          </form>
 
-          <p className="text-xs text-gray-400 text-center mt-4">
-            By registering, you agree to our{" "}
-            <Link href="/terms" className="underline hover:text-gray-600">Terms of Service</Link>.
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Company Name + Website */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Field
+                    id="companyName"
+                    name="companyName"
+                    label="Company Name"
+                    placeholder="My Detail Co."
+                    required
+                    value={form.companyName}
+                    onChange={(v) => update("companyName", v)}
+                  />
+                  <Field
+                    id="website"
+                    name="website"
+                    label="Website URL"
+                    type="url"
+                    placeholder="https://..."
+                    value={form.website}
+                    onChange={(v) => update("website", v)}
+                  />
+                </div>
+
+                {/* Email */}
+                <Field
+                  id="email"
+                  name="email"
+                  label="Email Address"
+                  type="email"
+                  placeholder="operator@example.com"
+                  required
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={(v) => update("email", v)}
+                />
+
+                {/* Phone + Home Base */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Field
+                    id="phone"
+                    name="phone"
+                    label="Phone"
+                    type="tel"
+                    placeholder="+1 (555) 000-0000"
+                    value={form.phone}
+                    onChange={(v) => update("phone", v)}
+                  />
+                  <Field
+                    id="homeBase"
+                    name="homeBase"
+                    label="Home Base"
+                    placeholder="Miami, FL"
+                    value={form.homeBase}
+                    onChange={(v) => update("homeBase", v)}
+                  />
+                </div>
+
+                {/* Password + Confirm */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Field
+                    id="password"
+                    name="password"
+                    label="Password"
+                    type="password"
+                    placeholder="Min. 8 chars"
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    value={form.password}
+                    onChange={(v) => update("password", v)}
+                  />
+                  <Field
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    label="Confirm Password"
+                    type="password"
+                    placeholder="••••••••"
+                    required
+                    autoComplete="new-password"
+                    value={form.confirmPassword}
+                    onChange={(v) => update("confirmPassword", v)}
+                  />
+                </div>
+
+                {/* Specialization */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-[8px] font-black uppercase tracking-widest text-black">Specialization</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(
+                      [
+                        { value: "BOATS" as Specialization, label: "Boats", Icon: Ship },
+                        { value: "CARS" as Specialization, label: "Cars", Icon: Car },
+                        { value: "BOTH" as Specialization, label: "Both", Icon: Layers },
+                      ]
+                    ).map(({ value, label, Icon }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setSpecialization(value)}
+                        className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                          specialization === value
+                            ? "border-black bg-black text-white"
+                            : "border-gray-200 bg-white text-gray-500 hover:border-black hover:text-black"
+                        }`}
+                      >
+                        <Icon size={15} />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Info box */}
+                <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-700 leading-relaxed">
+                    Account verification requires active liability insurance and a verifiable professional portfolio.
+                  </p>
+                </div>
+
+                {error && (
+                  <p className="text-[11px] font-black uppercase tracking-widest text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 bg-black text-white rounded-xl py-4 text-[11px] font-black uppercase tracking-widest hover:bg-[var(--brand-red)] active:scale-[0.98] transition-all disabled:opacity-60"
+                >
+                  {loading
+                    ? <><Loader2 size={14} className="animate-spin" /> REGISTERING...</>
+                    : <>Access Dashboard <ArrowRight size={14} /></>
+                  }
+                </button>
+              </form>
+            </motion.div>
+          </div>
+
+          <p className="mt-8 text-center text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">
+            © 2026 DetailHub Network
           </p>
         </div>
       </div>
-    </div>
+    </>
   );
 }
