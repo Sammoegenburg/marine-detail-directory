@@ -6,7 +6,8 @@
 import React, { useState, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Mail, Lock, ArrowRight, Building2, Globe, Phone, ArrowLeft, Loader2, Ship, Car, Layers
+  Mail, Lock, ArrowRight, Building2, Globe, Phone, ArrowLeft, Loader2,
+  Ship, Car, Layers, ChevronRight, MapPin,
 } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -20,8 +21,8 @@ function TypographyStyle() {
       :root { --font-main: 'Inter', sans-serif; --brand-red: #ff385c; }
       .auth-root { font-family: var(--font-main); -webkit-font-smoothing: antialiased; }
       .uber-shadow { box-shadow: 0 40px 100px -20px rgba(0,0,0,0.12), 0 20px 50px -20px rgba(0,0,0,0.08); }
-      .input-focus:focus-within { border-color: #000000; box-shadow: 0 0 0 2px rgba(0,0,0,0.05); }
-      .auth-input::placeholder { color: #CBD5E1; font-weight: 500; }
+      .input-focus:focus-within { border-color: #000; box-shadow: 0 0 0 2px rgba(0,0,0,0.05); }
+      input::placeholder { color: #CBD5E1; font-weight: 500; }
     `}} />
   );
 }
@@ -62,7 +63,7 @@ function Field({
 }
 
 function inputClass() {
-  return 'auth-input w-full px-3 py-3.5 bg-transparent text-sm font-medium text-gray-900 placeholder-[#CBD5E1] outline-none';
+  return 'w-full px-3 py-3.5 bg-transparent text-sm font-medium text-gray-900 outline-none';
 }
 
 // ─── Error banner ──────────────────────────────────────────────────────────────
@@ -82,7 +83,7 @@ function PrimaryButton({ loading, loadingText, children }: { loading: boolean; l
     <button
       type="submit"
       disabled={loading}
-      className="w-full flex items-center justify-center gap-2 bg-black text-white rounded-full py-3.5 text-[11px] font-black uppercase tracking-widest hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-60"
+      className="w-full flex items-center justify-center gap-2 bg-black text-white rounded-full py-3.5 text-[11px] font-black uppercase tracking-widest hover:bg-[#ff385c] active:scale-[0.98] transition-all disabled:opacity-60"
     >
       {loading ? <><Loader2 size={14} className="animate-spin" /> {loadingText}</> : <>{children} <ArrowRight size={14} /></>}
     </button>
@@ -136,12 +137,12 @@ function LoginView({ onSwitch }: { onSwitch: (v: View) => void }) {
   return (
     <motion.div key="login" {...fadeInUp} className="w-full">
       <div className="mb-7">
-        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">
-          SECURE CREDENTIALS REQUIRED FOR ENTRY
-        </p>
-        <h1 className="text-3xl font-black tracking-tighter text-black uppercase">
-          ACCESS DASHBOARD
+        <h1 className="text-3xl font-black tracking-tighter text-black uppercase mb-2">
+          Access Dashboard
         </h1>
+        <p className="text-gray-400 font-bold text-[11px] uppercase tracking-widest leading-relaxed">
+          Secure credentials required for entry
+        </p>
       </div>
 
       {registered && (
@@ -187,7 +188,7 @@ function LoginView({ onSwitch }: { onSwitch: (v: View) => void }) {
         {error && <ErrorBanner message={error} />}
 
         <PrimaryButton loading={loading} loadingText="AUTHENTICATING...">
-          ACCESS DASHBOARD
+          Access Dashboard
         </PrimaryButton>
       </form>
 
@@ -196,16 +197,16 @@ function LoginView({ onSwitch }: { onSwitch: (v: View) => void }) {
           onClick={() => onSwitch('forgot')}
           className="block w-full text-center text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
         >
-          FORGOT PASSWORD?
+          Forgot Password?
         </button>
         <div className="border-t border-gray-100 pt-3 text-center">
           <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-            NEW TO THE NETWORK?{' '}
+            New to the network?{' '}
             <button
               onClick={() => onSwitch('register')}
-              className="text-black hover:underline"
+              className="inline-flex items-center gap-0.5 text-black hover:underline"
             >
-              JOIN THE NETWORK
+              Join the Network <ChevronRight size={10} />
             </button>
           </p>
         </div>
@@ -296,43 +297,51 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
   }
 
   const specializationOptions: { value: Specialization; label: string; icon: React.ReactNode }[] = [
-    { value: 'boats', label: 'BOATS', icon: <Ship size={15} /> },
-    { value: 'cars', label: 'CARS', icon: <Car size={15} /> },
-    { value: 'both', label: 'BOTH', icon: <Layers size={15} /> },
+    { value: 'boats', label: 'Boats', icon: <Ship size={15} /> },
+    { value: 'cars', label: 'Cars', icon: <Car size={15} /> },
+    { value: 'both', label: 'Both', icon: <Layers size={15} /> },
   ];
 
   return (
     <motion.div key="register" {...fadeInUp} className="w-full">
+      <button
+        onClick={() => onSwitch('login')}
+        className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black mb-6 transition-colors"
+      >
+        <ArrowLeft size={12} /> Back to Sign In
+      </button>
+
       <div className="mb-7">
-        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">
-          REGISTER YOUR PROFESSIONAL CREDENTIALS
-        </p>
-        <h1 className="text-3xl font-black tracking-tighter text-black uppercase">
-          JOIN THE NETWORK
+        <h1 className="text-3xl font-black tracking-tighter text-black uppercase mb-2">
+          Access Dashboard
         </h1>
+        <p className="text-gray-400 font-bold text-[11px] uppercase tracking-widest leading-relaxed">
+          Register your professional credentials
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label="COMPANY NAME" icon={<Building2 size={15} />}>
-          <input
-            type="text"
-            placeholder="Your Company LLC"
-            value={form.companyName}
-            onChange={(e) => update('companyName', e.target.value)}
-            required
-            className={inputClass()}
-          />
-        </Field>
-
-        <Field label="WEBSITE URL (OPTIONAL)" icon={<Globe size={15} />}>
-          <input
-            type="url"
-            placeholder="https://yoursite.com"
-            value={form.website}
-            onChange={(e) => update('website', e.target.value)}
-            className={inputClass()}
-          />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="COMPANY NAME" icon={<Building2 size={15} />}>
+            <input
+              type="text"
+              placeholder="Company LLC"
+              value={form.companyName}
+              onChange={(e) => update('companyName', e.target.value)}
+              required
+              className={inputClass()}
+            />
+          </Field>
+          <Field label="WEBSITE URL" icon={<Globe size={15} />}>
+            <input
+              type="url"
+              placeholder="https://site.com"
+              value={form.website}
+              onChange={(e) => update('website', e.target.value)}
+              className={inputClass()}
+            />
+          </Field>
+        </div>
 
         <Field label="EMAIL ADDRESS" icon={<Mail size={15} />}>
           <input
@@ -346,25 +355,26 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
           />
         </Field>
 
-        <Field label="PHONE (OPTIONAL)" icon={<Phone size={15} />}>
-          <input
-            type="tel"
-            placeholder="+1 (555) 000-0000"
-            value={form.phone}
-            onChange={(e) => update('phone', e.target.value)}
-            className={inputClass()}
-          />
-        </Field>
-
-        <Field label="HOME BASE — CITY, STATE" icon={<span className="text-[11px] font-black text-gray-400">📍</span>}>
-          <input
-            type="text"
-            placeholder="Miami, FL"
-            value={form.homeBase}
-            onChange={(e) => update('homeBase', e.target.value)}
-            className={inputClass()}
-          />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="PHONE" icon={<Phone size={15} />}>
+            <input
+              type="tel"
+              placeholder="+1 (555) 000-0000"
+              value={form.phone}
+              onChange={(e) => update('phone', e.target.value)}
+              className={inputClass()}
+            />
+          </Field>
+          <Field label="HOME BASE" icon={<MapPin size={15} />}>
+            <input
+              type="text"
+              placeholder="Miami, FL"
+              value={form.homeBase}
+              onChange={(e) => update('homeBase', e.target.value)}
+              className={inputClass()}
+            />
+          </Field>
+        </div>
 
         {/* Specialization */}
         <div className="space-y-2">
@@ -414,19 +424,16 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
 
         {error && <ErrorBanner message={error} />}
 
+        <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+          <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">
+            Account verification requires active liability insurance and a verifiable professional portfolio.
+          </p>
+        </div>
+
         <PrimaryButton loading={loading} loadingText="REGISTERING...">
-          JOIN THE NETWORK
+          Access Dashboard
         </PrimaryButton>
       </form>
-
-      <div className="mt-5 border-t border-gray-100 pt-3 text-center">
-        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-          ALREADY REGISTERED?{' '}
-          <button onClick={() => onSwitch('login')} className="text-black hover:underline">
-            ACCESS DASHBOARD
-          </button>
-        </p>
-      </div>
     </motion.div>
   );
 }
@@ -471,16 +478,16 @@ function ForgotView({ onSwitch }: { onSwitch: (v: View) => void }) {
         onClick={() => onSwitch('login')}
         className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black mb-6 transition-colors"
       >
-        <ArrowLeft size={12} /> BACK TO LOGIN
+        <ArrowLeft size={12} /> Back
       </button>
 
       <div className="mb-7">
-        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">
-          PASSWORD RESET PROTOCOL
-        </p>
-        <h1 className="text-3xl font-black tracking-tighter text-black uppercase">
-          RECOVERY
+        <h1 className="text-3xl font-black tracking-tighter text-black uppercase mb-2">
+          Recovery
         </h1>
+        <p className="text-gray-400 font-bold text-[11px] uppercase tracking-widest leading-relaxed">
+          Password reset protocol
+        </p>
       </div>
 
       {sent ? (
@@ -502,6 +509,10 @@ function ForgotView({ onSwitch }: { onSwitch: (v: View) => void }) {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
+          <p className="text-[11px] text-gray-500 leading-relaxed">
+            Provide your registered email address. We will deploy instructions to reset your secure dashboard credentials.
+          </p>
+
           <Field label="REGISTERED EMAIL ADDRESS" icon={<Mail size={15} />}>
             <input
               type="email"
@@ -516,8 +527,8 @@ function ForgotView({ onSwitch }: { onSwitch: (v: View) => void }) {
 
           {error && <ErrorBanner message={error} />}
 
-          <PrimaryButton loading={loading} loadingText="TRANSMITTING...">
-            INITIATE RECOVERY
+          <PrimaryButton loading={loading} loadingText="SENDING...">
+            Send Reset Link
           </PrimaryButton>
         </form>
       )}
@@ -533,10 +544,10 @@ function AuthContent() {
   const [view, setView] = useState<View>(initialView);
 
   return (
-    <div className="auth-root min-h-screen flex flex-col items-center justify-center bg-[#F8F9FA] px-4 py-12">
+    <div className="auth-root min-h-screen flex flex-col items-center justify-center bg-[#F8F9FA] p-6">
       <TypographyStyle />
 
-      <div className="w-full max-w-sm">
+      <div className={`w-full transition-all duration-300 ${view === 'register' ? 'max-w-[640px]' : 'max-w-[520px]'}`}>
         {/* Logo */}
         <div className="text-center mb-8">
           <a href="/" className="inline-block">
@@ -545,7 +556,7 @@ function AuthContent() {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 uber-shadow">
+        <div className="bg-white rounded-[3rem] p-10 uber-shadow border border-gray-100">
           <AnimatePresence mode="wait" initial={false}>
             {view === 'login' && <LoginView key="login" onSwitch={setView} />}
             {view === 'register' && <RegisterView key="register" onSwitch={setView} />}
@@ -555,7 +566,7 @@ function AuthContent() {
 
         {/* Footer */}
         <p className="mt-6 text-center text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">
-          © 2026 DETAILHUB NETWORK
+          © 2026 DetailHub Network
         </p>
       </div>
     </div>
