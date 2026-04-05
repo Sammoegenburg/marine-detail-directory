@@ -370,21 +370,19 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
           />
         </div>
 
-        {/* Email */}
-        <Field
-          id="reg-email"
-          name="email"
-          label="Email Address"
-          type="email"
-          placeholder="operator@example.com"
-          required
-          autoComplete="email"
-          value={form.email}
-          onChange={(v) => update('email', v)}
-        />
-
-        {/* Phone + Home Base side by side */}
+        {/* Email + Phone side by side */}
         <div className="grid grid-cols-2 gap-3">
+          <Field
+            id="reg-email"
+            name="email"
+            label="Email Address"
+            type="email"
+            placeholder="operator@example.com"
+            required
+            autoComplete="email"
+            value={form.email}
+            onChange={(v) => update('email', v)}
+          />
           <Field
             id="phone"
             name="phone"
@@ -394,15 +392,17 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
             value={form.phone}
             onChange={(v) => update('phone', v)}
           />
-          <Field
-            id="homeBase"
-            name="homeBase"
-            label="Home Base"
-            placeholder="Miami, FL"
-            value={form.homeBase}
-            onChange={(v) => update('homeBase', v)}
-          />
         </div>
+
+        {/* Home Base full width */}
+        <Field
+          id="homeBase"
+          name="homeBase"
+          label="Home Base"
+          placeholder="Miami, FL"
+          value={form.homeBase}
+          onChange={(v) => update('homeBase', v)}
+        />
 
         {/* Password + Confirm side by side */}
         <div className="grid grid-cols-2 gap-3">
@@ -446,7 +446,7 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
                 key={value}
                 type="button"
                 onClick={() => setSpecialization(value)}
-                className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                className={`flex flex-col items-center gap-1 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${
                   specialization === value
                     ? 'border-black bg-black text-white'
                     : 'border-gray-200 bg-white text-gray-500 hover:border-black hover:text-black'
@@ -460,7 +460,7 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
         </div>
 
         {/* Consent checkboxes */}
-        <div className="border border-gray-100 rounded-2xl p-5 space-y-3">
+        <div className="border border-gray-100 rounded-2xl p-4 space-y-2">
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -616,7 +616,7 @@ function AuthContent() {
     <div className="auth-root min-h-screen flex flex-col items-center justify-center bg-[#F8F9FA] px-4 py-12">
       <TypographyStyle />
 
-      <div className="w-full max-w-md">
+      <div className={`w-full transition-all duration-300 ${view === 'register' ? 'max-w-[720px]' : 'max-w-md'}`}>
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <a href="/" className="inline-flex items-center gap-2 group">
@@ -632,7 +632,7 @@ function AuthContent() {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-[3rem] p-10 uber-shadow border border-gray-100">
+        <div className={`bg-white rounded-[3rem] uber-shadow border border-gray-100 ${view === 'register' ? 'p-8' : 'p-10'}`}>
           <AnimatePresence mode="wait" initial={false}>
             {view === 'login' && <LoginView key="login" onSwitch={setView} />}
             {view === 'register' && <RegisterView key="register" onSwitch={setView} />}
