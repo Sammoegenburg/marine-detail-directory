@@ -264,6 +264,9 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
   });
   const [specialization, setSpecialization] = useState<Specialization>('BOTH');
   const [liabilityConfirmed, setLiabilityConfirmed] = useState(false);
+  const [emailConsent, setEmailConsent] = useState(true);
+  const [smsConsent, setSmsConsent] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -298,6 +301,9 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
           homeBase: form.homeBase || undefined,
           specialization,
           password: form.password,
+          emailConsent,
+          smsConsent,
+          marketingConsent,
         }),
       });
 
@@ -453,19 +459,54 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
           </div>
         </div>
 
-        {/* Liability checkbox */}
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            required
-            checked={liabilityConfirmed}
-            onChange={(e) => setLiabilityConfirmed(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 accent-black cursor-pointer"
-          />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 leading-relaxed">
-            I confirm my company carries at least $1M in liability coverage
-          </span>
-        </label>
+        {/* Consent checkboxes */}
+        <div className="border border-gray-100 rounded-2xl p-5 space-y-3">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              required
+              checked={liabilityConfirmed}
+              onChange={(e) => setLiabilityConfirmed(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-black cursor-pointer"
+            />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 leading-relaxed">
+              I confirm my company carries at least $1M in liability coverage
+            </span>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={emailConsent}
+              onChange={(e) => setEmailConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-black cursor-pointer"
+            />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 leading-relaxed">
+              I agree to receive lead notification emails
+            </span>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={smsConsent}
+              onChange={(e) => setSmsConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-black cursor-pointer"
+            />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 leading-relaxed">
+              I agree to receive SMS notifications
+            </span>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={marketingConsent}
+              onChange={(e) => setMarketingConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-black cursor-pointer"
+            />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 leading-relaxed">
+              I agree to receive marketing communications
+            </span>
+          </label>
+        </div>
 
         {error && <ErrorBanner message={error} />}
 

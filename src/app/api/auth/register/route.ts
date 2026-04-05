@@ -15,6 +15,9 @@ const registerSchema = z.object({
   specialization: z.string().optional(),
   password: z.string().min(8),
   claimSlug: z.string().optional(),
+  emailConsent: z.boolean().optional(),
+  smsConsent: z.boolean().optional(),
+  marketingConsent: z.boolean().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -29,7 +32,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { companyName, website, email, phone, homeBase, specialization, password, claimSlug } = parsed.data;
+    const { companyName, website, email, phone, homeBase, specialization, password, claimSlug, emailConsent, smsConsent, marketingConsent } = parsed.data;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -75,6 +78,9 @@ export async function POST(req: NextRequest) {
         phone: phone ?? null,
         homeBase: homeBase ?? null,
         specialization: specialization ?? null,
+        emailConsent: emailConsent ?? true,
+        smsConsent: smsConsent ?? false,
+        marketingConsent: marketingConsent ?? false,
       },
     });
 
