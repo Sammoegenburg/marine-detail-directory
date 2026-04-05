@@ -6,8 +6,7 @@
 import React, { useState, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Mail, Lock, ArrowRight, Building2, Globe, Phone, ArrowLeft, Loader2,
-  Ship, Car, Layers, ChevronRight, MapPin,
+  ArrowRight, ArrowLeft, ChevronRight, Loader2, Ship, Car, Layers,
 } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -21,8 +20,8 @@ function TypographyStyle() {
       :root { --font-main: 'Inter', sans-serif; --brand-red: #ff385c; }
       .auth-root { font-family: var(--font-main); -webkit-font-smoothing: antialiased; }
       .uber-shadow { box-shadow: 0 40px 100px -20px rgba(0,0,0,0.12), 0 20px 50px -20px rgba(0,0,0,0.08); }
-      .input-focus:focus-within { border-color: #000; box-shadow: 0 0 0 2px rgba(0,0,0,0.05); }
-      input::placeholder { color: #CBD5E1; font-weight: 500; }
+      .input-focus:focus-within { border-color: #000000; box-shadow: 0 0 0 2px rgba(0,0,0,0.05); }
+      .auth-input::placeholder { color: #CBD5E1; font-weight: 500; }
     `}} />
   );
 }
@@ -30,6 +29,7 @@ function TypographyStyle() {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type View = 'login' | 'register' | 'forgot';
+type Specialization = 'BOATS' | 'CARS' | 'BOTH';
 
 // ─── Animation preset ─────────────────────────────────────────────────────────
 
@@ -37,36 +37,80 @@ const fadeInUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -20 },
-  transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+  transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
 };
 
-// ─── Shared input wrapper ──────────────────────────────────────────────────────
+// ─── Shared field ─────────────────────────────────────────────────────────────
 
 function Field({
   label,
-  icon,
-  children,
+  id,
+  name,
+  type = 'text',
+  placeholder,
+  required,
+  minLength,
+  autoComplete,
+  value,
+  onChange,
+  rightLabel,
 }: {
   label: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
+  id: string;
+  name: string;
+  type?: string;
+  placeholder?: string;
+  required?: boolean;
+  minLength?: number;
+  autoComplete?: string;
+  value?: string;
+  onChange?: (v: string) => void;
+  rightLabel?: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1">
-      <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest pl-1">{label}</label>
-      <div className="relative flex items-center border border-gray-200 rounded-xl bg-white input-focus transition-all">
-        <span className="pl-4 text-gray-400 shrink-0">{icon}</span>
-        {children}
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between">
+        <label htmlFor={id} className="text-[8px] font-black uppercase tracking-widest text-black">
+          {label}
+        </label>
+        {rightLabel}
+      </div>
+      <div className="input-focus border border-gray-200 rounded-xl bg-white transition-all">
+        <input
+          id={id}
+          name={name}
+          type={type}
+          placeholder={placeholder}
+          required={required}
+          minLength={minLength}
+          autoComplete={autoComplete}
+          value={value}
+          onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+          className="auth-input w-full px-4 py-3.5 bg-transparent text-sm font-medium text-gray-900 outline-none rounded-xl"
+        />
       </div>
     </div>
   );
 }
 
-function inputClass() {
-  return 'w-full px-3 py-3.5 bg-transparent text-sm font-medium text-gray-900 outline-none';
+// ─── Primary button ────────────────────────────────────────────────────────────
+
+function PrimaryButton({ loading, loadingText, label, disabled }: { loading: boolean; loadingText: string; label: string; disabled?: boolean }) {
+  return (
+    <button
+      type="submit"
+      disabled={loading || disabled}
+      className="w-full flex items-center justify-center gap-2 bg-black text-white rounded-xl py-4 text-[11px] font-black uppercase tracking-widest hover:bg-[var(--brand-red)] active:scale-[0.98] transition-all disabled:opacity-60"
+    >
+      {loading
+        ? <><Loader2 size={14} className="animate-spin" /> {loadingText}</>
+        : <>{label} <ArrowRight size={14} /></>
+      }
+    </button>
+  );
 }
 
-// ─── Error banner ──────────────────────────────────────────────────────────────
+// ─── Banners ───────────────────────────────────────────────────────────────────
 
 function ErrorBanner({ message }: { message: string }) {
   return (
@@ -76,16 +120,24 @@ function ErrorBanner({ message }: { message: string }) {
   );
 }
 
-// ─── Primary button ────────────────────────────────────────────────────────────
+function SuccessBanner({ message }: { message: string }) {
+  return (
+    <p className="text-[11px] font-black uppercase tracking-widest text-green-700 bg-green-50 border border-green-100 rounded-xl px-4 py-2.5">
+      {message}
+    </p>
+  );
+}
 
-function PrimaryButton({ loading, loadingText, children }: { loading: boolean; loadingText: string; children: React.ReactNode }) {
+// ─── Back button ──────────────────────────────────────────────────────────────
+
+function BackButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
-      type="submit"
-      disabled={loading}
-      className="w-full flex items-center justify-center gap-2 bg-black text-white rounded-full py-3.5 text-[11px] font-black uppercase tracking-widest hover:bg-[#ff385c] active:scale-[0.98] transition-all disabled:opacity-60"
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors mb-6"
     >
-      {loading ? <><Loader2 size={14} className="animate-spin" /> {loadingText}</> : <>{children} <ArrowRight size={14} /></>}
+      <ArrowLeft size={12} /> {label}
     </button>
   );
 }
@@ -97,7 +149,6 @@ function LoginView({ onSwitch }: { onSwitch: (v: View) => void }) {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get('next');
   const registered = searchParams.get('registered') === 'true';
-  const reset = searchParams.get('reset') === 'true';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -109,11 +160,7 @@ function LoginView({ onSwitch }: { onSwitch: (v: View) => void }) {
     setLoading(true);
     setError(null);
 
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-    });
+    const result = await signIn('credentials', { email, password, redirect: false });
 
     if (result?.error) {
       setError('Invalid credentials — access denied');
@@ -145,79 +192,63 @@ function LoginView({ onSwitch }: { onSwitch: (v: View) => void }) {
         </p>
       </div>
 
-      {registered && (
-        <div className="mb-4 px-4 py-3 bg-green-50 border border-green-100 rounded-xl">
-          <p className="text-[10px] font-black uppercase tracking-widest text-green-700">
-            CREDENTIALS ESTABLISHED — SIGN IN TO CONTINUE
-          </p>
-        </div>
-      )}
-      {reset && (
-        <div className="mb-4 px-4 py-3 bg-green-50 border border-green-100 rounded-xl">
-          <p className="text-[10px] font-black uppercase tracking-widest text-green-700">
-            PASSWORD UPDATED — SIGN IN WITH NEW CREDENTIALS
-          </p>
-        </div>
-      )}
+      {registered && <SuccessBanner message="CREDENTIALS ESTABLISHED — SIGN IN TO CONTINUE" />}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label="EMAIL ADDRESS" icon={<Mail size={15} />}>
-          <input
-            type="email"
-            placeholder="operator@company.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-            className={inputClass()}
-          />
-        </Field>
+      <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <Field
+          id="login-email"
+          name="email"
+          label="Email Address"
+          type="email"
+          placeholder="operator@example.com"
+          required
+          autoComplete="email"
+          value={email}
+          onChange={setEmail}
+        />
 
-        <Field label="PASSWORD" icon={<Lock size={15} />}>
-          <input
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-            className={inputClass()}
-          />
-        </Field>
+        <Field
+          id="login-password"
+          name="password"
+          label="Password"
+          type="password"
+          placeholder="••••••••"
+          required
+          autoComplete="current-password"
+          value={password}
+          onChange={setPassword}
+          rightLabel={
+            <button
+              type="button"
+              onClick={() => onSwitch('forgot')}
+              className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
+            >
+              Forgot Password?
+            </button>
+          }
+        />
 
         {error && <ErrorBanner message={error} />}
 
-        <PrimaryButton loading={loading} loadingText="AUTHENTICATING...">
-          Access Dashboard
-        </PrimaryButton>
+        <PrimaryButton loading={loading} loadingText="AUTHENTICATING..." label="Access Dashboard" />
       </form>
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
+        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+          New to the Network?
+        </span>
         <button
-          onClick={() => onSwitch('forgot')}
-          className="block w-full text-center text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
+          onClick={() => onSwitch('register')}
+          className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-black hover:text-[var(--brand-red)] transition-colors"
         >
-          Forgot Password?
+          Join the Network <ChevronRight size={12} />
         </button>
-        <div className="border-t border-gray-100 pt-3 text-center">
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-            New to the network?{' '}
-            <button
-              onClick={() => onSwitch('register')}
-              className="inline-flex items-center gap-0.5 text-black hover:underline"
-            >
-              Join the Network <ChevronRight size={10} />
-            </button>
-          </p>
-        </div>
       </div>
     </motion.div>
   );
 }
 
 // ─── Register view ─────────────────────────────────────────────────────────────
-
-type Specialization = 'boats' | 'cars' | 'both';
 
 function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
   const router = useRouter();
@@ -231,7 +262,8 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
     password: '',
     confirmPassword: '',
   });
-  const [specialization, setSpecialization] = useState<Specialization>('boats');
+  const [specialization, setSpecialization] = useState<Specialization>('BOTH');
+  const [liabilityConfirmed, setLiabilityConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -277,7 +309,7 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
         return;
       }
 
-      // Auto sign-in after registration
+      // Auto sign-in
       const signInResult = await signIn('credentials', {
         email: form.email,
         password: form.password,
@@ -289,27 +321,16 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
         return;
       }
 
-      router.push('/company');
+      router.push(data.redirectUrl ?? '/company');
     } catch {
       setError('SYSTEM ERROR — PLEASE TRY AGAIN');
       setLoading(false);
     }
   }
 
-  const specializationOptions: { value: Specialization; label: string; icon: React.ReactNode }[] = [
-    { value: 'boats', label: 'Boats', icon: <Ship size={15} /> },
-    { value: 'cars', label: 'Cars', icon: <Car size={15} /> },
-    { value: 'both', label: 'Both', icon: <Layers size={15} /> },
-  ];
-
   return (
     <motion.div key="register" {...fadeInUp} className="w-full">
-      <button
-        onClick={() => onSwitch('login')}
-        className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black mb-6 transition-colors"
-      >
-        <ArrowLeft size={12} /> Back to Sign In
-      </button>
+      <BackButton label="Back to Sign In" onClick={() => onSwitch('login')} />
 
       <div className="mb-7">
         <h1 className="text-3xl font-black tracking-tighter text-black uppercase mb-2">
@@ -321,118 +342,134 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Company Name + Website side by side */}
         <div className="grid grid-cols-2 gap-3">
-          <Field label="COMPANY NAME" icon={<Building2 size={15} />}>
-            <input
-              type="text"
-              placeholder="Company LLC"
-              value={form.companyName}
-              onChange={(e) => update('companyName', e.target.value)}
-              required
-              className={inputClass()}
-            />
-          </Field>
-          <Field label="WEBSITE URL" icon={<Globe size={15} />}>
-            <input
-              type="url"
-              placeholder="https://site.com"
-              value={form.website}
-              onChange={(e) => update('website', e.target.value)}
-              className={inputClass()}
-            />
-          </Field>
-        </div>
-
-        <Field label="EMAIL ADDRESS" icon={<Mail size={15} />}>
-          <input
-            type="email"
-            placeholder="operator@company.com"
-            value={form.email}
-            onChange={(e) => update('email', e.target.value)}
+          <Field
+            id="companyName"
+            name="companyName"
+            label="Company Name"
+            placeholder="My Detail Co."
             required
-            autoComplete="email"
-            className={inputClass()}
+            value={form.companyName}
+            onChange={(v) => update('companyName', v)}
           />
-        </Field>
-
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="PHONE" icon={<Phone size={15} />}>
-            <input
-              type="tel"
-              placeholder="+1 (555) 000-0000"
-              value={form.phone}
-              onChange={(e) => update('phone', e.target.value)}
-              className={inputClass()}
-            />
-          </Field>
-          <Field label="HOME BASE" icon={<MapPin size={15} />}>
-            <input
-              type="text"
-              placeholder="Miami, FL"
-              value={form.homeBase}
-              onChange={(e) => update('homeBase', e.target.value)}
-              className={inputClass()}
-            />
-          </Field>
+          <Field
+            id="website"
+            name="website"
+            label="Website URL"
+            type="url"
+            placeholder="https://..."
+            value={form.website}
+            onChange={(v) => update('website', v)}
+          />
         </div>
 
-        {/* Specialization */}
-        <div className="space-y-2">
-          <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest pl-1">SPECIALIZATION</p>
+        {/* Email */}
+        <Field
+          id="reg-email"
+          name="email"
+          label="Email Address"
+          type="email"
+          placeholder="operator@example.com"
+          required
+          autoComplete="email"
+          value={form.email}
+          onChange={(v) => update('email', v)}
+        />
+
+        {/* Phone + Home Base side by side */}
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            id="phone"
+            name="phone"
+            label="Phone"
+            type="tel"
+            placeholder="+1 (555) 000-0000"
+            value={form.phone}
+            onChange={(v) => update('phone', v)}
+          />
+          <Field
+            id="homeBase"
+            name="homeBase"
+            label="Home Base"
+            placeholder="Miami, FL"
+            value={form.homeBase}
+            onChange={(v) => update('homeBase', v)}
+          />
+        </div>
+
+        {/* Password + Confirm side by side */}
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            id="reg-password"
+            name="password"
+            label="Password"
+            type="password"
+            placeholder="Min. 8 chars"
+            required
+            minLength={8}
+            autoComplete="new-password"
+            value={form.password}
+            onChange={(v) => update('password', v)}
+          />
+          <Field
+            id="confirmPassword"
+            name="confirmPassword"
+            label="Confirm Password"
+            type="password"
+            placeholder="••••••••"
+            required
+            autoComplete="new-password"
+            value={form.confirmPassword}
+            onChange={(v) => update('confirmPassword', v)}
+          />
+        </div>
+
+        {/* Specialization picker */}
+        <div className="flex flex-col gap-2">
+          <span className="text-[8px] font-black uppercase tracking-widest text-black">Specialization</span>
           <div className="grid grid-cols-3 gap-2">
-            {specializationOptions.map((opt) => (
+            {(
+              [
+                { value: 'BOATS' as Specialization, label: 'Boats', Icon: Ship },
+                { value: 'CARS' as Specialization, label: 'Cars', Icon: Car },
+                { value: 'BOTH' as Specialization, label: 'Both', Icon: Layers },
+              ]
+            ).map(({ value, label, Icon }) => (
               <button
-                key={opt.value}
+                key={value}
                 type="button"
-                onClick={() => setSpecialization(opt.value)}
+                onClick={() => setSpecialization(value)}
                 className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${
-                  specialization === opt.value
+                  specialization === value
                     ? 'border-black bg-black text-white'
-                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-400'
+                    : 'border-gray-200 bg-white text-gray-500 hover:border-black hover:text-black'
                 }`}
               >
-                {opt.icon}
-                {opt.label}
+                <Icon size={15} />
+                {label}
               </button>
             ))}
           </div>
         </div>
 
-        <Field label="PASSWORD (MIN 8 CHARS)" icon={<Lock size={15} />}>
+        {/* Liability checkbox */}
+        <label className="flex items-start gap-3 cursor-pointer">
           <input
-            type="password"
-            placeholder="••••••••"
-            value={form.password}
-            onChange={(e) => update('password', e.target.value)}
+            type="checkbox"
             required
-            autoComplete="new-password"
-            className={inputClass()}
+            checked={liabilityConfirmed}
+            onChange={(e) => setLiabilityConfirmed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-black cursor-pointer"
           />
-        </Field>
-
-        <Field label="CONFIRM PASSWORD" icon={<Lock size={15} />}>
-          <input
-            type="password"
-            placeholder="••••••••"
-            value={form.confirmPassword}
-            onChange={(e) => update('confirmPassword', e.target.value)}
-            required
-            autoComplete="new-password"
-            className={inputClass()}
-          />
-        </Field>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 leading-relaxed">
+            I confirm my company carries at least $1M in liability coverage
+          </span>
+        </label>
 
         {error && <ErrorBanner message={error} />}
 
-        <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
-          <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">
-            Account verification requires active liability insurance and a verifiable professional portfolio.
-          </p>
-        </div>
-
-        <PrimaryButton loading={loading} loadingText="REGISTERING...">
-          Access Dashboard
-        </PrimaryButton>
+        <PrimaryButton loading={loading} loadingText="REGISTERING..." label="Access Dashboard" disabled={!liabilityConfirmed} />
       </form>
     </motion.div>
   );
@@ -459,7 +496,7 @@ function ForgotView({ onSwitch }: { onSwitch: (v: View) => void }) {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         setError((data.error ?? 'SYSTEM ERROR').toUpperCase());
         setLoading(false);
         return;
@@ -474,19 +511,14 @@ function ForgotView({ onSwitch }: { onSwitch: (v: View) => void }) {
 
   return (
     <motion.div key="forgot" {...fadeInUp} className="w-full">
-      <button
-        onClick={() => onSwitch('login')}
-        className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black mb-6 transition-colors"
-      >
-        <ArrowLeft size={12} /> Back
-      </button>
+      <BackButton label="Back" onClick={() => onSwitch('login')} />
 
-      <div className="mb-7">
+      <div className="mb-5">
         <h1 className="text-3xl font-black tracking-tighter text-black uppercase mb-2">
           Recovery
         </h1>
         <p className="text-gray-400 font-bold text-[11px] uppercase tracking-widest leading-relaxed">
-          Password reset protocol
+          Password Reset Protocol
         </p>
       </div>
 
@@ -495,48 +527,44 @@ function ForgotView({ onSwitch }: { onSwitch: (v: View) => void }) {
           <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-50 border border-gray-200 rounded-full text-2xl">
             ✉️
           </div>
-          <p className="text-[11px] font-black uppercase tracking-widest text-black">TRANSMISSION SENT</p>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-            IF AN ACCOUNT EXISTS FOR THIS EMAIL, A RESET LINK HAS BEEN DISPATCHED.
-            LINK EXPIRES IN 1 HOUR.
-          </p>
+          <SuccessBanner message="TRANSMISSION SENT — CHECK YOUR INBOX" />
           <button
             onClick={() => onSwitch('login')}
             className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
           >
-            ← RETURN TO LOGIN
+            ← Return to Login
           </button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <p className="text-[11px] text-gray-500 leading-relaxed">
+        <>
+          <p className="text-gray-500 text-[11px] font-medium leading-relaxed mb-5">
             Provide your registered email address. We will deploy instructions to reset your secure dashboard credentials.
           </p>
 
-          <Field label="REGISTERED EMAIL ADDRESS" icon={<Mail size={15} />}>
-            <input
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Field
+              id="forgot-email"
+              name="email"
+              label="Email Address"
               type="email"
-              placeholder="operator@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder="operator@example.com"
               required
               autoComplete="email"
-              className={inputClass()}
+              value={email}
+              onChange={setEmail}
             />
-          </Field>
 
-          {error && <ErrorBanner message={error} />}
+            {error && <ErrorBanner message={error} />}
 
-          <PrimaryButton loading={loading} loadingText="SENDING...">
-            Send Reset Link
-          </PrimaryButton>
-        </form>
+            <PrimaryButton loading={loading} loadingText="TRANSMITTING..." label="Send Reset Link" />
+          </form>
+        </>
       )}
     </motion.div>
   );
 }
 
-// ─── Main page ─────────────────────────────────────────────────────────────────
+// ─── Main auth content ─────────────────────────────────────────────────────────
 
 function AuthContent() {
   const searchParams = useSearchParams();
@@ -544,14 +572,21 @@ function AuthContent() {
   const [view, setView] = useState<View>(initialView);
 
   return (
-    <div className="auth-root min-h-screen flex flex-col items-center justify-center bg-[#F8F9FA] p-6">
+    <div className="auth-root min-h-screen flex flex-col items-center justify-center bg-[#F8F9FA] px-4 py-12">
       <TypographyStyle />
 
-      <div className={`w-full transition-all duration-300 ${view === 'register' ? 'max-w-[640px]' : 'max-w-[520px]'}`}>
+      <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <a href="/" className="inline-block">
-            <img src="/images/logo.png" alt="DetailHub" className="h-10 mx-auto" />
+        <div className="flex justify-center mb-8">
+          <a href="/" className="inline-flex items-center gap-2 group">
+            <img
+              src="/images/logo.png"
+              alt="DetailHub"
+              className="h-8 w-8 group-hover:scale-105 transition-transform"
+            />
+            <span className="text-sm font-black uppercase tracking-widest text-black">
+              DetailHub
+            </span>
           </a>
         </div>
 
@@ -565,13 +600,15 @@ function AuthContent() {
         </div>
 
         {/* Footer */}
-        <p className="mt-6 text-center text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">
+        <p className="mt-8 text-center text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">
           © 2026 DetailHub Network
         </p>
       </div>
     </div>
   );
 }
+
+// ─── Page export ───────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
   return (
