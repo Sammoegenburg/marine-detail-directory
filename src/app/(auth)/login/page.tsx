@@ -510,7 +510,7 @@ function RegisterView({ onSwitch }: { onSwitch: (v: View) => void }) {
 
         {error && <ErrorBanner message={error} />}
 
-        <PrimaryButton loading={loading} loadingText="REGISTERING..." label="Access Dashboard" disabled={!liabilityConfirmed} />
+        <PrimaryButton loading={loading} loadingText="REGISTERING..." label="Access Dashboard" disabled={!liabilityConfirmed || !emailConsent} />
       </form>
     </motion.div>
   );
